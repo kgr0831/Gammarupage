@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+*.log
+.DS_Store
+.env*
+!.env.example
+public/media/clips/*
+!public/media/clips/.gitkeep
+test-results/
+GameVideo/
+*.tsbuildinfo
+2026년 1학기 겜마루 개총 PPT.pdf
+gammaru_research.md
+image/
+gammaru_3D.png

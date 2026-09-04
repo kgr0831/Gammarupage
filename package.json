@@ -1,0 +1,33 @@
+{
+  "name": "gammaru-landing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/prepare-pages-output.mjs",
+    "start": "next start",
+    "preview:pages": "node scripts/serve-export.mjs",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test:smoke": "node scripts/smoke.mjs",
+    "import:archive": "node scripts/import-archive.mjs --download-media",
+    "assets:brand": "node scripts/build-brand-assets.mjs",
+    "assets:reel": "node scripts/build-hero-reel.mjs"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sharp": "0.34.4"
+  },
+  "devDependencies": {
+    "@types/node": "26.4.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.4",
+    "ffmpeg-static": "^5.3.0",
+    "playwright": "1.62.1",
+    "typescript": "6.0.3"
+  }
+}

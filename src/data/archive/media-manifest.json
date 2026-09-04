@@ -1,0 +1,690 @@
+[
+  {
+    "gameUid": "g-2025-gj-001",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1LKkHHj4QDhwTeRz8eiQChBYtNFZaT31P",
+    "sha256": "15564213012e1df6e7dc0ce834fb8d61c49bf538eda9af6085a64094dacc1a7a",
+    "webp": "/archive/games/g-2025-gj-001/cover.webp",
+    "avif": "/archive/games/g-2025-gj-001/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-001",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/147gpv3SU_Q_oDVD23dApNmS-e3MLqdhD",
+    "sha256": "11c041b6d2ebe8465475ee1af47cc906409ddeba20bbe71e67b3c8e04863f2ab",
+    "webp": "/archive/games/g-2025-gj-001/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-001/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-001",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1-1LplOhaKLplli3DgaKC6QFiSVUaz_1j",
+    "sha256": "9cc9e8f97274a9bbb87c0c0e32f59f46fb9c52fb3049830b96edd4da3cbcd701",
+    "webp": "/archive/games/g-2025-gj-001/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-gj-001/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-001",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1xs7s3yFgDsv9U49NYptHuPVQZbr96ksz",
+    "sha256": "797a9391fe0d984cb0b115379c10edbd8dedec44345c34482e20a363e9514f37",
+    "webp": "/archive/games/g-2025-gj-001/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-gj-001/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1q7rJlJ_lag_OVa0DjgE2D89gSEzU0ZvV",
+    "sha256": "1d52181ab4054ec4097cc99c1dc71fe8a947363d6373cf57cdb138054a08721d",
+    "webp": "/archive/games/g-2025-gj-002/cover.webp",
+    "avif": "/archive/games/g-2025-gj-002/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1wGn75_74V_3AHu9-fBmyyByNMwT2dvd7",
+    "sha256": "918f4b4aa0725685b4ebe3b50537507c625b5b99bec5234a7405c8757b979553",
+    "webp": "/archive/games/g-2025-gj-002/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-002/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/12-1A9stJO8ryZTJpz2BoyH7U4ORXK7U2",
+    "sha256": "57f23624625c1711acfa831158a2c30c9bfbca4f53edbcdc5a432b9567f1456e",
+    "webp": "/archive/games/g-2025-gj-002/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-gj-002/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1wAHsZ9lGeTmQIQ40BLrYStXgSmX1opFB",
+    "sha256": "1e24b031563b285dcd25529a3ef2f2b11fe50a792139d8f8f65edb0b3c872b3c",
+    "webp": "/archive/games/g-2025-gj-002/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-gj-002/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1RmsWF78tlGV0Fd2yXRSKzPcptyuCfNXW",
+    "sha256": "c2dd13a3abbb679f8cee37a87f370e956a87ed44390dbb621405a4cc7fe87a44",
+    "webp": "/archive/games/g-2025-gj-002/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-gj-002/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-002",
+    "role": "screenshot-05",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1V1Gjjxsb1591FG1v69wAYfsfC1zrl_yW",
+    "sha256": "19818898cd0887038a553a77f67ed53561908e4f4db6dba08b38a8262768ff3f",
+    "webp": "/archive/games/g-2025-gj-002/screenshot-05.webp",
+    "avif": "/archive/games/g-2025-gj-002/screenshot-05.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-003",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1lxVaPkVoQeVHqM2HtJyCO0VL0LWL6KXR",
+    "sha256": "c7497dc103b28b0e31b199bd3bee3c1a34d341f4597c694cc9b9bd57d821a901",
+    "webp": "/archive/games/g-2025-gj-003/cover.webp",
+    "avif": "/archive/games/g-2025-gj-003/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-003",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1wz9rwjuIMXuyPzMJ-2ujXBBkTAqXxv3k",
+    "sha256": "b3ea63296b0cf16d39294ac843c40efa2c2ee5ed9095edb2d32fdfeda3128ff7",
+    "webp": "/archive/games/g-2025-gj-003/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-003/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-003",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1akSP2Kjjsua_1DgpgU_L2VfR74nKH8Do",
+    "sha256": "6bbc3e7db7fac95e448ac7ed639b119aab04b2143bc829fb5dd8166843800318",
+    "webp": "/archive/games/g-2025-gj-003/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-gj-003/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-004",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/18uSE2u5k6-hEbbRSriGrFa2di-oBlJTh",
+    "sha256": "78e596ba3eb57b7e8c7cd689805312e43c9a3350ca7544d26a802eab7bef66c6",
+    "webp": "/archive/games/g-2025-gj-004/cover.webp",
+    "avif": "/archive/games/g-2025-gj-004/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-004",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1UlXr8PlYDJNUPlZtenYNW2m_npYgLyZY",
+    "sha256": "3b4aaa2abd3cc860823554ca9090252e58d6f76179956152c528b44d3e1d1148",
+    "webp": "/archive/games/g-2025-gj-004/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-004/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-004",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1uHWh2sZkF9lD32CUSbxvqeKpAj3MQHtZ",
+    "sha256": "4c1d7cf51198dd81cfc752071b82a949dd3fdb586c9a4a0972a1a25c32f5d0b4",
+    "webp": "/archive/games/g-2025-gj-004/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-gj-004/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-005",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/13JTYXJnlKLtdy2BzedT8MsvimJbJRNzo",
+    "sha256": "e484983b8e555ebb7042cc3a072792bfc245734b8d47dcd300338981eca20380",
+    "webp": "/archive/games/g-2025-gj-005/cover.webp",
+    "avif": "/archive/games/g-2025-gj-005/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-005",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Xh5pLbFsxTzKIfzD3wfDfvxWETE0D_Ib",
+    "sha256": "d0f2619f8b5010b583fce48856fba3b5558faaba51b0d79d84368b12d93503b0",
+    "webp": "/archive/games/g-2025-gj-005/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-005/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-005",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1PMMziPJphUVIxD836RJnFkSa0JzGN81-",
+    "sha256": "75a746873b442e1f1986f00d64b5b0c2b9a51e0d2df6d21ea16d6adaa73502f9",
+    "webp": "/archive/games/g-2025-gj-005/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-gj-005/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-005",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1LhtrvbiMjEFMrlx8Q_qXxFO-Y6TAoGhC",
+    "sha256": "b1adbe84be0019be693791a7884c34cb02679ed2e835bcdfd16546708505c25b",
+    "webp": "/archive/games/g-2025-gj-005/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-gj-005/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-005",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1M5GpHXCRAwhqYg7Lx1mL8ZL7h74GDAum",
+    "sha256": "a95135d57b464881ec92e214fd6a7bf94937a4d0e52aedb08fb074b26728b779",
+    "webp": "/archive/games/g-2025-gj-005/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-gj-005/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-007",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1kHl7onBm_3nTu5ZjI_ol3UbsftWaogSF",
+    "sha256": "f49fea8fc98ab516cc88138656001cb58c050e6ff7a05c2492b0d2353ff8b9e3",
+    "webp": "/archive/games/g-2025-gj-007/cover.webp",
+    "avif": "/archive/games/g-2025-gj-007/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-008",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1xKC77C9fhkw5Acv33to0tYvFJJxHOUjW",
+    "sha256": "83e632fba170973ed85115f3ce2f69d74c6eb31b67413905f3d1721c3aad39b0",
+    "webp": "/archive/games/g-2025-gj-008/cover.webp",
+    "avif": "/archive/games/g-2025-gj-008/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-009",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1vCNC7wlhrinWbLRZ64fL-o-l25WGWw9Q",
+    "sha256": "980630fa6966e739521b9ae5335138c052da4d94fe1ba9850ca38e069c6e8044",
+    "webp": "/archive/games/g-2025-gj-009/cover.webp",
+    "avif": "/archive/games/g-2025-gj-009/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-010",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1eEhokNzBfNKJR4P9VN07Gzr3YT_T6uiB",
+    "sha256": "7caf1e166fcf28ad2bf518e604e7b37b22c6b1b01ec96a9850f313cb769bc478",
+    "webp": "/archive/games/g-2025-gj-010/cover.webp",
+    "avif": "/archive/games/g-2025-gj-010/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-gj-010",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1GzeAgCQfokNFeczWc4zjfkBZBtYaa9SM",
+    "sha256": "ae425d330e464d69795f0e16464b447ffbc936be401388c44163daf82e923d77",
+    "webp": "/archive/games/g-2025-gj-010/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-gj-010/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1vKLyftG56LnQGd_3X67EgpaGLPvKhu7v",
+    "sha256": "b757c6cdb004c0df7a03a75e5ba1219fd09407ccb4f4ac5eea13b06dc0301b48",
+    "webp": "/archive/games/g-2025-su-001/cover.webp",
+    "avif": "/archive/games/g-2025-su-001/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1-Z1Sq7KAOkno4sjfywt7SWI_XvfU1Ft9",
+    "sha256": "43ad0962b6ff89ef6f6c339f475dff876c42f519e2ccf6f53a9437644ed8816f",
+    "webp": "/archive/games/g-2025-su-001/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/17gVv14VX1Zf3v90Gw_b3Zr-ASb6XNIbM",
+    "sha256": "72cf7090b7b2e511f2a91d324f0671ed5ba465d287b1f4337b0e163cf873454c",
+    "webp": "/archive/games/g-2025-su-001/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1uZsaKjA7iRfZx2v4rYYwMXm7lVsZOPFJ",
+    "sha256": "051a27f0c59cad8a7b73730e235868ef37f9b678353fb172568eafccd75c9b80",
+    "webp": "/archive/games/g-2025-su-001/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1mA3DwbZhhHr8FJ5W07d7vk_v4RdQc0Lb",
+    "sha256": "748d8c0a8af98ef4845b03ab79d7857ca2bce555c28437f15702381d7263efcc",
+    "webp": "/archive/games/g-2025-su-001/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-05",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1nXEO1XT0PXPmr2Y4ivsOCtPsDeMo3j5r",
+    "sha256": "a7d3b0a37e92cfce619ca2c4013861f9ba419d1a18ad9947556403e6ef0877a5",
+    "webp": "/archive/games/g-2025-su-001/screenshot-05.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-05.avif"
+  },
+  {
+    "gameUid": "g-2025-su-001",
+    "role": "screenshot-06",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1EhQrYgxsbbc3xRQF1z8Vwe2QzkmNSBfF",
+    "sha256": "f0602930fbdf05149d7a9a0ad7de78d25e327c0aa8c01f4cc01b08dc2b0ae1fd",
+    "webp": "/archive/games/g-2025-su-001/screenshot-06.webp",
+    "avif": "/archive/games/g-2025-su-001/screenshot-06.avif"
+  },
+  {
+    "gameUid": "g-2025-su-002",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1gDlKk1trXBVpZxqWX7AT0zWga7bz_7Vm",
+    "sha256": "1b84e1efa4fd34fc4bb45acf12750d6e5f259920701ee2535483db679dc6deb0",
+    "webp": "/archive/games/g-2025-su-002/cover.webp",
+    "avif": "/archive/games/g-2025-su-002/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-002",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1SFFDZWj0V7Jxv3bFsdxn2CqlSwn2uv0L",
+    "sha256": "c09fef6e975f5be48b3fbdeb86f4879f329e48936f36e011d881a81e95ad7a2d",
+    "webp": "/archive/games/g-2025-su-002/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-002/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-002",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1fyLgoYQVt8mxZ6y6_pqtUFgzZQzrxBAS",
+    "sha256": "f9999cb2217fb65bf183344050c63f7698b9f8361686d36f068d4232ad5d68af",
+    "webp": "/archive/games/g-2025-su-002/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-002/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-003",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1bCPCyE92nHzkW3Ayb6f32-4_PWq3lJ0F",
+    "sha256": "2cfea22071dc0287fbbc6ff5b9716187c5ae78528bb4c047a74c9c40f587a2d7",
+    "webp": "/archive/games/g-2025-su-003/cover.webp",
+    "avif": "/archive/games/g-2025-su-003/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-003",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1YDTx8pdSNTwdzjugW_Bc0WydyWVUcBno",
+    "sha256": "2468450c19cc2de359dd0a31f8a1e882158b41cd909d9dd0ee132f4ffea4691d",
+    "webp": "/archive/games/g-2025-su-003/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-003/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-003",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1_pn-FSSxtkW2Hkxl_0_b8Ta2ShR-fKRq",
+    "sha256": "131e00606ecb225635ce93c9c2908f077c40bd0bb42469af212b69f4185181ea",
+    "webp": "/archive/games/g-2025-su-003/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-003/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-003",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1fXdz6hQ3wS6MCYBP-ko0lVnPKsTU8Swq",
+    "sha256": "828e1b06001afd0891d371025840951990c58f41f3e699630f4984a5f65dd33b",
+    "webp": "/archive/games/g-2025-su-003/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-003/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-004",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/18mx46BKAbHrD_pTLomVDIYgwsIitgeyB",
+    "sha256": "c6d264ff010decb45c650a8cb7adff5b605e116c80dc340825265d99f394ccec",
+    "webp": "/archive/games/g-2025-su-004/cover.webp",
+    "avif": "/archive/games/g-2025-su-004/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-004",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1WcDioceG85DXvYF7RijLgOeA9NS-qOWC",
+    "sha256": "43605a369a0999fb67cb2c2a95a538713ccef38fecbc008bb47b449cfbad9576",
+    "webp": "/archive/games/g-2025-su-004/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-004/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-004",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1uuXA6ZfEu-zD-QvWG-WDLK79pf8qLtZ0",
+    "sha256": "a950e5d38966cbf0b76fd376114167c5875074ac3e8085dbab40795929a099f1",
+    "webp": "/archive/games/g-2025-su-004/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-004/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-005",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1fRAGfyEiL_hBXIN4yWM-Ko3QutKT_0EI",
+    "sha256": "ca35b0faddc39e63103530ed746492b524fe4cdb1a825f11886c9946e920ffba",
+    "webp": "/archive/games/g-2025-su-005/cover.webp",
+    "avif": "/archive/games/g-2025-su-005/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-005",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1i97tUwlvz5wKSW-5CJAJmgr_sGXNkkkh",
+    "sha256": "94e2b56f66784e784f0d08c0b9f7583233dd823c9a6c501a584249a2d24356d6",
+    "webp": "/archive/games/g-2025-su-005/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-005/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-005",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1xMsM3b_-y3gC0L0qhmx4_rI9k2pcbRjO",
+    "sha256": "d3b11c7244712e60498d8f531adcb311acdfee58f9bfa864d69ce3839e5e1267",
+    "webp": "/archive/games/g-2025-su-005/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-005/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-006",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1bQJWr4qGNiL8E9-slQlEHJw6L-Db9GX8",
+    "sha256": "234c41deb02455a9e666ee61806ea06e08ebcc15b923ee797d689a330edc4fec",
+    "webp": "/archive/games/g-2025-su-006/cover.webp",
+    "avif": "/archive/games/g-2025-su-006/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-006",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Z4k28KxQYjuJahnJoci6yMWsEtwqqM-E",
+    "sha256": "ddbb982d5ca5f08846bf4cf1b2a18acbd1c84ca48740b1fe17660bef3906c141",
+    "webp": "/archive/games/g-2025-su-006/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-006/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-006",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1ZYHWoX2uW5PwJmxpJVMCxF-MCH7osRBU",
+    "sha256": "d2128f591d10b57f86272c7610e6f0fc0cefd9cfe7d1d6559d4415b9690377cb",
+    "webp": "/archive/games/g-2025-su-006/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-006/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-006",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1_TOdJg3mSxgsizsjcfBhKIRRM6kAx1Tf",
+    "sha256": "6087619c87805cb6277a388a89f1e3b839cf412c2c9aa1560311527a73847aae",
+    "webp": "/archive/games/g-2025-su-006/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-006/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-006",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/14qmG-KNwUzpVzmJdXXeoxH3Qg5B4Y1_L",
+    "sha256": "3817f9e2888452f7940c3be94198863885717a4aab2e400b85403eb6ce961942",
+    "webp": "/archive/games/g-2025-su-006/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-su-006/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1QEr2HmO9HJm2AX0Lnuk-x9U5J2KZcuzH",
+    "sha256": "075d1db6b49a49ccdd342e69a11f5d17413fafec3a37047b3d496440cce58b9b",
+    "webp": "/archive/games/g-2025-su-007/cover.webp",
+    "avif": "/archive/games/g-2025-su-007/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1KcUEtorwcvwdIyq4uACyS6_VNWCjHEzT",
+    "sha256": "fbe9779c0ab945c3e7266fd42f14257c6a10cdb86d537e3b835e1bc0ce65b9d9",
+    "webp": "/archive/games/g-2025-su-007/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-007/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1cLjMlbY2zWzxn_xsPZByPBxn4XnrZrXZ",
+    "sha256": "965e69e8f2c91086e88a36c179a67a89e6fc14d82e71778a7d1ab93b81710544",
+    "webp": "/archive/games/g-2025-su-007/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-007/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1PJMQkA0K5a0erpPifMl3Sm-rjqY3EHzE",
+    "sha256": "9df189d0db5a5eb596ab4839b52483aae00323a6aaf248331076c320d61ed6a8",
+    "webp": "/archive/games/g-2025-su-007/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-007/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/16QoCv6BwE1UsIWSLocdMIKzi7GFCDRtL",
+    "sha256": "a2e7096dccad5e9171667716aa3d2019ea9b5e1144182a995f249756f22a6de0",
+    "webp": "/archive/games/g-2025-su-007/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-su-007/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-su-007",
+    "role": "screenshot-05",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1nC4rPkLSWoY5TdmKryFQfnZ4YmHkNnuu",
+    "sha256": "9974c327068e5a9ec2e2c63c064cd91adc53f9a477447646284f0ef2293ca834",
+    "webp": "/archive/games/g-2025-su-007/screenshot-05.webp",
+    "avif": "/archive/games/g-2025-su-007/screenshot-05.avif"
+  },
+  {
+    "gameUid": "g-2025-su-008",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1zTnMlIcwP0d5GUXJ9DkpJDyxemt23rEP",
+    "sha256": "6cf5173b96104451a9107efc84dab0410b30f3a549fedb3edd965009b7baf3d9",
+    "webp": "/archive/games/g-2025-su-008/cover.webp",
+    "avif": "/archive/games/g-2025-su-008/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-008",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1ePoGqwFeNhPQgmBnimHIt2_W2_iCI-j4",
+    "sha256": "11dbae7ca554d99731bf9ade1c90135239269a1bd16f475bb92ddfafdcb4fc48",
+    "webp": "/archive/games/g-2025-su-008/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-008/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-008",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1TGkOUfmTUs99XRv3XslQoiFGhi08e-T-",
+    "sha256": "d3a6ef141a2e5ad3b57df836ee16ac18d084176f05ee21109ec020065dfc6cc3",
+    "webp": "/archive/games/g-2025-su-008/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-008/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-008",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Ge573vuVw_gr1bSbFNl8_JFeboo1DvLA",
+    "sha256": "141c3b299b4b45bb736f067ad3642e26146a319c37c1639d67429dac2fbaccb8",
+    "webp": "/archive/games/g-2025-su-008/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-008/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-009",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1_tMTMeIgv1aLXqBp7Lfpr9Y5CiNtDf--",
+    "sha256": "58dae80d871d9729c1fb46161ccb35f63f96d177f60edb947c8a72ba911b52b2",
+    "webp": "/archive/games/g-2025-su-009/cover.webp",
+    "avif": "/archive/games/g-2025-su-009/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-009",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1LEvrjemb5YlMRAeG8_4uXPNrXUAt_tGq",
+    "sha256": "0932ba5792653b76b659d6ac70ce2316bf5027a4cb49e4f4405e30d517cb2fcf",
+    "webp": "/archive/games/g-2025-su-009/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-009/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-009",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1j0jpFzLHY6xqeJkuL_YAf_xctGnI05jz",
+    "sha256": "846e2cb8cc6a4d0f3d43cdaf0643c9764d64190fc581b221e64f8b57d422950a",
+    "webp": "/archive/games/g-2025-su-009/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-009/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-010",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Vi54b_LVEgvMBkEf3QFvajy7KSfpbhSh",
+    "sha256": "523601406613b0efd425968b53b80b0fbe3673858775fedf29fa8c2209b2f302",
+    "webp": "/archive/games/g-2025-su-010/cover.webp",
+    "avif": "/archive/games/g-2025-su-010/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-010",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Go4uOP8wnPmS4KeKRSx2pUlSYNvHCrmM",
+    "sha256": "3f35f77c93ff7fa6750d5b00d8230f91ddb48efc09a8bba2bbc7c7961edbfb1e",
+    "webp": "/archive/games/g-2025-su-010/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-010/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-010",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1Vi54b_LVEgvMBkEf3QFvajy7KSfpbhSh",
+    "sha256": "523601406613b0efd425968b53b80b0fbe3673858775fedf29fa8c2209b2f302",
+    "webp": "/archive/games/g-2025-su-010/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-010/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-010",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1ysP3uTKO0I9d1ruEVZPyszhEWwIH_vKO",
+    "sha256": "a927d8ffd7e60bc9788bb47bdd4710ecbbde9f6db4a48481e41004511dad1e77",
+    "webp": "/archive/games/g-2025-su-010/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-010/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-010",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1cM4gGmnNinpcWfhFSrK0gAZzuQfqLiq-",
+    "sha256": "d10f541736d4ab1d42c3f0200b0c5f71ab2c44ffb326383997f57bbd5bd49667",
+    "webp": "/archive/games/g-2025-su-010/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-su-010/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-su-011",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1fpy6ta6dvJdWtFB1PTN7SOeZGtXHqk0g",
+    "sha256": "d91ec9c77ea4daae03864decf8cce5d38927cd2ce1b827959257246d08820f18",
+    "webp": "/archive/games/g-2025-su-011/cover.webp",
+    "avif": "/archive/games/g-2025-su-011/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-011",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1EnPoYdNzs_qIDQXaXjn6PzMFQSGjisKp",
+    "sha256": "e12d7da9bf88b996e58fccb2fd947d27ca94014316c61e7ce52e6864f0282281",
+    "webp": "/archive/games/g-2025-su-011/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-011/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-011",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1DCgemIKmm-uL9UWO5WwOQ_FK6Eu0M5Rh",
+    "sha256": "cf7ca24545fc0c0434d5874ef89208e45cb0a0335c771265788af48b508d8740",
+    "webp": "/archive/games/g-2025-su-011/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-011/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-011",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/14tgjKN6ByunJHLRZZMYtVeUTCUZJ-SqY",
+    "sha256": "61af55a2983cf0f7d806f83c59e1cc1864629d9353d9cedf946a5a6c5473f068",
+    "webp": "/archive/games/g-2025-su-011/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-011/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-012",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1qTDXuUPuYItb6LVMd4N6Zd0ZamiMIQZC",
+    "sha256": "91b3d53db9cbb4891c99b15c3ad8760a63a0a16233b14d5c9608fa69182e9b41",
+    "webp": "/archive/games/g-2025-su-012/cover.webp",
+    "avif": "/archive/games/g-2025-su-012/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-su-012",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1w6X5LXgcPGz1Nd4cb9RmxV_CcArfnTei",
+    "sha256": "3e9170cf512e550364c55d5c1ef7b495e0172a114a506e650e7adc74ec2a4d61",
+    "webp": "/archive/games/g-2025-su-012/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-su-012/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-su-012",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/15ebOhvJeV1gApkPYLox6kY-xW4GVCJs7",
+    "sha256": "85a9a23418d8a12c99459bdab6eee4c1b92c4a90670a1d983ec8569b4c1d2403",
+    "webp": "/archive/games/g-2025-su-012/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-su-012/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-su-012",
+    "role": "screenshot-03",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/13YYei3Et2BdArmgP7lpdtcUF3sEmNh9C",
+    "sha256": "ce2f5738884724b0af2af72552d91a76e6eae2183b00a6b0989e7c205f54d666",
+    "webp": "/archive/games/g-2025-su-012/screenshot-03.webp",
+    "avif": "/archive/games/g-2025-su-012/screenshot-03.avif"
+  },
+  {
+    "gameUid": "g-2025-su-012",
+    "role": "screenshot-04",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1woE99JJyu_nn6ZGJNl4Gpn2Nh3utUSGb",
+    "sha256": "dc1633bcffbc91f16d24d5645436fa7253c0c0ff80ab8604e79e1d130ecbbb48",
+    "webp": "/archive/games/g-2025-su-012/screenshot-04.webp",
+    "avif": "/archive/games/g-2025-su-012/screenshot-04.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-001",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1N8e24c5hkMPTUThdBUrZVrt-XhXu8Zjy",
+    "sha256": "0917b2c7a96e8d690e85fd6c23ce0cb043375b3f8dfe12137584ab629c884f54",
+    "webp": "/archive/games/g-2025-wi-001/cover.webp",
+    "avif": "/archive/games/g-2025-wi-001/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-001",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1N8e24c5hkMPTUThdBUrZVrt-XhXu8Zjy",
+    "sha256": "0917b2c7a96e8d690e85fd6c23ce0cb043375b3f8dfe12137584ab629c884f54",
+    "webp": "/archive/games/g-2025-wi-001/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-wi-001/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-002",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1D91KN2l5dgFk0PReOWaaUjfUdVAiGqzG",
+    "sha256": "36bf9924c4892fdded62af540731b00b06a2e1cc1710c9762da28809e85adc83",
+    "webp": "/archive/games/g-2025-wi-002/cover.webp",
+    "avif": "/archive/games/g-2025-wi-002/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-002",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1T678B6hXl3wYQ-zbcCUtIrL6P8PvnvNa",
+    "sha256": "36bf9924c4892fdded62af540731b00b06a2e1cc1710c9762da28809e85adc83",
+    "webp": "/archive/games/g-2025-wi-002/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-wi-002/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-002",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1QO8CigBcWqfD99bwFa5KxJd2JTopX3a8",
+    "sha256": "904462393890d34f073a96d9cb13194d7edb81cb822fd454968355bc7cfa7a18",
+    "webp": "/archive/games/g-2025-wi-002/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-wi-002/screenshot-02.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-003",
+    "role": "cover",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1SF-b7cN4CK4WU1inwGL9OG8XcDGXbGy4",
+    "sha256": "8cb5bf27ef24251e117af11a8e55fbba18c62321858386bd06e59fd7bc449125",
+    "webp": "/archive/games/g-2025-wi-003/cover.webp",
+    "avif": "/archive/games/g-2025-wi-003/cover.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-003",
+    "role": "screenshot-01",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1j6pPHb7WOsoMiiSgBT9VumcqQcqmnKmt",
+    "sha256": "883ea10de74f761820e39cc6f5763bf54eddc63b60d40eee4d96b7f3cbd3ecfb",
+    "webp": "/archive/games/g-2025-wi-003/screenshot-01.webp",
+    "avif": "/archive/games/g-2025-wi-003/screenshot-01.avif"
+  },
+  {
+    "gameUid": "g-2025-wi-003",
+    "role": "screenshot-02",
+    "sourceUrl": "https://lh3.googleusercontent.com/d/1UdCJH8aidQ9j9sHdfILZ_WoCmuXCM88V",
+    "sha256": "3b65952fbdc3f78d2144abc42e9a9f401e1827b30d1934c1fca6e401398f5e39",
+    "webp": "/archive/games/g-2025-wi-003/screenshot-02.webp",
+    "avif": "/archive/games/g-2025-wi-003/screenshot-02.avif"
+  }
+]
