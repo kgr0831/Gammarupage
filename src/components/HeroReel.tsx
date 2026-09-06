@@ -1,136 +1,224 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import type Hls from "hls.js";
+import reel from "@/data/hero-reel-manifest.json";
 import { assetPath } from "@/lib/paths";
 
-type ReelState = "waiting" | "playing" | "ended" | "error";
+type Connection = EventTarget & { saveData?: boolean };
+type Candidate = { kind: "hls" | "native" | "mp4"; url: string; codec: string };
 
-/** 영상이 어떤 이유로든 준비되지 않아도 이 시간이 지나면 무조건 로딩을 해제한다. */
-const READY_FAILSAFE_MS = 3500;
-
-export function HeroReel({ enabled }: { enabled: boolean }) {
+export function HeroReel() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [state, setState] = useState<ReelState>("waiting");
-  const [mediaReady, setMediaReady] = useState(false);
-  const [mediaFailed, setMediaFailed] = useState(false);
-  const [minimumElapsed, setMinimumElapsed] = useState(false);
-  const [skipPlayback, setSkipPlayback] = useState(false);
 
-  // 클라이언트 JS가 살아있음을 부트 스크립트에 알린다.
-  useEffect(() => {
-    document.documentElement.dataset.heroJs = "1";
-  }, []);
-
-  useEffect(() => {
-    if (!enabled) return;
-    const timer = window.setTimeout(() => setMinimumElapsed(true), 1500);
-    const failsafe = window.setTimeout(() => {
-      setMinimumElapsed(true);
-      setMediaFailed(true);
-      setMediaReady(true);
-    }, READY_FAILSAFE_MS);
-    const frame = window.requestAnimationFrame(() => {
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const saveData = "connection" in navigator && Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
-      let alreadyPlayed = false;
-      try {
-        alreadyPlayed = window.sessionStorage.getItem("gammaru-hero-played-v2") === "1";
-      } catch {
-        alreadyPlayed = false;
-      }
-      if (reduced || saveData || alreadyPlayed) {
-        setSkipPlayback(true);
-        setMediaReady(true);
-      }
-    });
-    return () => {
-      window.clearTimeout(timer);
-      window.clearTimeout(failsafe);
-      window.cancelAnimationFrame(frame);
-    };
-  }, [enabled]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const loading = enabled && state === "waiting";
-    root.classList.toggle("hero-loading", loading);
-    root.classList.toggle("hero-ready", !loading);
-    return () => {
-      // 언마운트 시에는 로딩 상태로 되돌리지 않고 항상 열어둔다.
-      root.classList.remove("hero-loading");
-      root.classList.add("hero-ready");
-    };
-  }, [enabled, state]);
-
-  // <source> 의 error 이벤트는 <video> 로 버블링되지 않는다.
-  // 소스가 전부 실패해도 onError 가 안 불리는 문제를 직접 막는다.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const fail = () => {
-      setMediaFailed(true);
-      setMediaReady(true);
+    const media = video;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobile = window.matchMedia("(max-width: 767px)").matches;
+    const connection = (navigator as Navigator & { connection?: Connection }).connection;
+    let disposed = false;
+    let started = false;
+    let blocked = false;
+    let generation = 0;
+    let attempt = 0;
+    let hls: Hls | undefined;
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    let nextSource: () => void = () => {};
+    const eligible = () => !disposed && !motion.matches && !connection?.saveData;
+
+    function clearDeadline() {
+      clearTimeout(deadline);
+      deadline = undefined;
+    }
+
+    function armDeadline() {
+      clearDeadline();
+      if (!document.hidden) deadline = setTimeout(() => nextSource(), 10000);
+    }
+
+    function releaseSource() {
+      clearDeadline();
+      attempt++;
+      hls?.destroy();
+      hls = undefined;
+      media.pause();
+      media.removeAttribute("src");
+      media.load();
+      delete media.dataset.playing;
+    }
+
+    function stop() {
+      generation++;
+      started = false;
+      nextSource = () => {};
+      releaseSource();
+    }
+
+    function play() {
+      if (!eligible() || document.hidden || blocked || !media.hasAttribute("src")) return;
+      const currentAttempt = attempt;
+      void media.play().catch((error: DOMException) => {
+        if (disposed || currentAttempt !== attempt || document.hidden || error.name === "AbortError") return;
+        if (error.name === "NotAllowedError") {
+          // Autoplay denial is not a codec failure; keep the poster and stop transfers.
+          blocked = true;
+          stop();
+        } else {
+          nextSource();
+        }
+      });
+    }
+
+    async function start() {
+      if (started || blocked || !eligible() || document.hidden) return;
+      started = true;
+      const currentGeneration = generation;
+      let HlsClass: typeof Hls | undefined;
+      const candidates: Candidate[] = [];
+      // Prefer controllable MSE buffers. iOS without MSE uses native HLS below.
+      if (window.MediaSource) {
+        try {
+          HlsClass = (await import("hls.js/light")).default;
+          if (HlsClass.isSupported()) {
+            if (await supportsAv1(mobile)) candidates.push({ kind: "hls", codec: "av1", url: reel.streams.av1.playlist });
+            candidates.push({ kind: "hls", codec: "h264", url: reel.streams.h264.playlist });
+          }
+        } catch {
+          // A blocked player chunk still leaves a browser-native MP4 fallback.
+        }
+      }
+      if (media.canPlayType("application/vnd.apple.mpegurl")) {
+        candidates.push({ kind: "native", codec: "h264", url: mobile ? reel.streams.h264.variants[0].playlist : reel.streams.h264.playlist });
+      }
+      if (disposed || currentGeneration !== generation) return;
+      if (!eligible() || document.hidden) {
+        started = false;
+        return;
+      }
+      candidates.push({ kind: "mp4", codec: "h264", url: mobile ? reel.fallback.mobile : reel.fallback.desktop });
+      let index = 0;
+      nextSource = () => {
+        releaseSource();
+        if (!eligible() || document.hidden) {
+          started = false;
+          return;
+        }
+        const candidate = candidates[index++];
+        if (!candidate) {
+          // Exhaust retries. A decorative video must never block navigation.
+          nextSource = () => {};
+          return;
+        }
+        const currentAttempt = attempt;
+        media.dataset.transport = candidate.kind;
+        media.dataset.codec = candidate.codec;
+        armDeadline();
+        if (candidate.kind === "hls" && HlsClass) {
+          const player = new HlsClass({
+            maxBufferLength: 8,
+            maxMaxBufferLength: 12,
+            maxBufferSize: 2 * 1000 * 1000,
+            // Retain one complete loop to reuse its source buffers on replay.
+            backBufferLength: 60,
+            startLevel: 0,
+            capLevelToPlayerSize: true,
+            testBandwidth: false,
+          });
+          hls = player;
+          if (mobile) player.autoLevelCapping = 0;
+          player.on(HlsClass.Events.ERROR, (_event, data) => {
+            if (data.fatal && currentAttempt === attempt) nextSource();
+          });
+          player.on(HlsClass.Events.MANIFEST_PARSED, play);
+          player.loadSource(assetPath(candidate.url));
+          player.attachMedia(media);
+        } else {
+          media.preload = "auto";
+          media.src = assetPath(candidate.url);
+          media.load();
+          play();
+        }
+      };
+      nextSource();
+    }
+
+    function onPlaying() {
+      if (!eligible() || document.hidden) {
+        media.pause();
+        return;
+      }
+      media.dataset.playing = "true";
+      clearDeadline();
+    }
+
+    function onVisibility() {
+      if (document.hidden) {
+        clearDeadline();
+        media.pause();
+        hls?.stopLoad();
+      } else if (eligible()) {
+        if (!started) void start();
+        else if (!blocked) {
+          hls?.startLoad(-1);
+          if (media.hasAttribute("src")) {
+            armDeadline();
+            play();
+          }
+        }
+      }
+    }
+
+    function onPreference() {
+      if (!eligible()) stop();
+      else void start();
+    }
+    const onError = () => { if (media.error) nextSource(); };
+    media.addEventListener("playing", onPlaying);
+    media.addEventListener("canplay", play);
+    media.addEventListener("waiting", armDeadline);
+    media.addEventListener("error", onError);
+    document.addEventListener("visibilitychange", onVisibility);
+    motion.addEventListener("change", onPreference);
+    connection?.addEventListener("change", onPreference);
+    void start();
+    return () => {
+      disposed = true;
+      media.removeEventListener("playing", onPlaying);
+      media.removeEventListener("canplay", play);
+      media.removeEventListener("waiting", armDeadline);
+      media.removeEventListener("error", onError);
+      document.removeEventListener("visibilitychange", onVisibility);
+      motion.removeEventListener("change", onPreference);
+      connection?.removeEventListener("change", onPreference);
+      stop();
     };
-    const sources = Array.from(video.querySelectorAll("source"));
-    sources.forEach((source) => source.addEventListener("error", fail));
-    return () => sources.forEach((source) => source.removeEventListener("error", fail));
-  }, [enabled, state]);
-
-  useEffect(() => {
-    if (!enabled || state !== "waiting" || !mediaReady || !minimumElapsed) return;
-    if (skipPlayback) {
-      setState("ended");
-      return;
-    }
-    if (mediaFailed) {
-      setState("error");
-      return;
-    }
-    const video = videoRef.current;
-    if (!video) {
-      setState("error");
-      return;
-    }
-    video.play().then(() => setState("playing")).catch(() => setState("error"));
-  }, [enabled, mediaFailed, mediaReady, minimumElapsed, skipPlayback, state]);
-
-  const finish = () => {
-    try {
-      window.sessionStorage.setItem("gammaru-hero-played-v2", "1");
-    } catch {
-      /* private mode 등에서 무시 */
-    }
-    setState("ended");
-  };
-
-  const markReady = () => setMediaReady(true);
+  }, []);
 
   return (
-    <>
-      <div className={`hero-reel hero-reel--${state}`} aria-hidden="true">
-        {enabled && state !== "ended" && (
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            preload="metadata"
-            onLoadedMetadata={markReady}
-            onLoadedData={markReady}
-            onCanPlay={markReady}
-            onEnded={finish}
-            onError={() => {
-              setMediaFailed(true);
-              setMediaReady(true);
-            }}
-          >
-            <source src={assetPath("/media/hero-reel.webm")} type="video/webm" />
-            <source src={assetPath("/media/hero-reel.mp4")} type="video/mp4" />
-          </video>
-        )}
-        <img className="hero-reel__mark" src={assetPath("/brand/gammaru-3d.png")} alt="" />
-        <div className="hero-reel__ink" />
-        <div className="hero-reel__dots" />
-      </div>
-    </>
+    <div className="hero-reel" aria-hidden="true">
+      {/* No source in server HTML: honor preferences before any video request. */}
+      <img className="hero-reel__poster" src={assetPath(reel.poster)} alt="" fetchPriority="high" />
+      <video ref={videoRef} muted loop playsInline preload="none" tabIndex={-1} disablePictureInPicture />
+      <img className="hero-reel__mark" src={assetPath("/brand/gammaru-3d.png")} alt="" />
+      <div className="hero-reel__ink" />
+      <div className="hero-reel__dots" />
+    </div>
   );
+}
+
+async function supportsAv1(mobile: boolean) {
+  const variant = reel.streams.av1.variants[mobile ? 0 : 1];
+  const contentType = `video/mp4; codecs="${reel.streams.av1.codecs}"`;
+  if (!window.MediaSource?.isTypeSupported(contentType) || !navigator.mediaCapabilities?.decodingInfo) return false;
+  try {
+    const capability = await navigator.mediaCapabilities.decodingInfo({
+      type: "media-source",
+      video: { contentType, width: variant.width, height: variant.height, bitrate: variant.bitrate, framerate: reel.fps },
+    });
+    return capability.supported && capability.smooth;
+  } catch {
+    return false;
+  }
 }

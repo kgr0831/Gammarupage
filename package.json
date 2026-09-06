@@ -10,11 +10,15 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:smoke": "node scripts/smoke.mjs",
+    "test:reel": "node scripts/test-hero-reel.mjs",
     "import:archive": "node scripts/import-archive.mjs --download-media",
     "assets:brand": "node scripts/build-brand-assets.mjs",
-    "assets:reel": "node scripts/build-hero-reel.mjs"
+    "assets:reel": "node scripts/build-reel-preview.mjs && node scripts/package-hero-reel.mjs",
+    "assets:reel:package": "node scripts/package-hero-reel.mjs",
+    "preview:reel": "node scripts/preview-reel.mjs"
   },
   "dependencies": {
+    "hls.js": "1.7.2",
     "next": "16.3.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",

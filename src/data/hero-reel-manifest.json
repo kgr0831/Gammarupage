@@ -1,64 +1,308 @@
 {
-  "generatedAt": "2026-09-04T08:23:58.139Z",
-  "width": 1920,
-  "height": 1080,
+  "version": "b50237e4bd9a",
+  "duration": 41.4,
+  "fps": 30,
   "muted": true,
-  "clips": [
+  "loop": true,
+  "segmentDuration": 4,
+  "poster": "/media/reel/b50237e4bd9a/poster.webp",
+  "streams": {
+    "av1": {
+      "playlist": "/media/reel/b50237e4bd9a/av1.m3u8",
+      "codecs": "av01.0.08M.08",
+      "variants": [
+        {
+          "height": 540,
+          "width": 960,
+          "bytes": 2989085,
+          "bitrate": 577601,
+          "playlist": "/media/reel/b50237e4bd9a/av1-540/index.m3u8"
+        },
+        {
+          "height": 1080,
+          "width": 1920,
+          "bytes": 6430442,
+          "bitrate": 1242598,
+          "playlist": "/media/reel/b50237e4bd9a/av1-1080/index.m3u8"
+        }
+      ]
+    },
+    "h264": {
+      "playlist": "/media/reel/b50237e4bd9a/h264.m3u8",
+      "codecs": "avc1.640028",
+      "variants": [
+        {
+          "height": 540,
+          "width": 960,
+          "bytes": 3547165,
+          "bitrate": 685443,
+          "playlist": "/media/reel/b50237e4bd9a/h264-540/index.m3u8"
+        },
+        {
+          "height": 1080,
+          "width": 1920,
+          "bytes": 8881894,
+          "bitrate": 1716309,
+          "playlist": "/media/reel/b50237e4bd9a/h264-1080/index.m3u8"
+        }
+      ]
+    }
+  },
+  "fallback": {
+    "mobile": "/media/reel/b50237e4bd9a/h264-540.mp4",
+    "desktop": "/media/reel/b50237e4bd9a/h264-1080.mp4"
+  },
+  "games": [
     {
-      "title": "감금학과대학원",
-      "award": "2026 겨울공모전 1위",
-      "source": "GameVideo/2026 겨울공모전-20260904T064615Z-1-002/2026 겨울공모전/감금학과대학원 2026-03-01 11-33-24.mp4",
-      "start": 744.727,
-      "duration": 4
+      "id": "mana",
+      "title": "마나 리로디드"
     },
     {
-      "title": "AfterBed",
-      "award": "2026 겨울공모전 3위",
-      "source": "GameVideo/2026 겨울공모전-20260904T064615Z-1-003/2026 겨울공모전/After bed 2026-03-01 13-28-15.mp4",
-      "start": 1372.447,
-      "duration": 4
+      "id": "pigment",
+      "title": "PigmentEscape"
     },
     {
-      "title": "신출귀몰",
-      "award": "2025 여름공모전 3위",
-      "source": "GameVideo/2025 여름공모전-20260904T064619Z-1-002/2025 여름공모전/신출귀몰_플레이영상/신출귀몰_플레이영상.mp4",
-      "start": 19.551,
-      "duration": 4
+      "id": "ghost",
+      "title": "신출귀몰"
     },
     {
-      "title": "마나 리로디드",
-      "award": "2025 여름공모전 인기상",
-      "source": "GameVideo/2025 여름공모전-20260904T064619Z-1-002/2025 여름공모전/마나 리로디드 플레이 영상/2026-02-17 08-34-39.mp4",
-      "start": 55.86,
-      "duration": 4
+      "id": "planet",
+      "title": "PLANET1101"
     },
     {
-      "title": "ChronoFactory",
-      "award": null,
-      "source": "GameVideo/2026 겨울공모전-20260904T064615Z-1-003/2026 겨울공모전/ChronoFactory 2026-03-01 12-07-51.mp4",
-      "start": 320.359,
-      "duration": 4
+      "id": "after",
+      "title": "AfterBed"
     },
     {
-      "title": "병아리대탈출",
-      "award": null,
-      "source": "GameVideo/2026 겨울공모전-20260904T064615Z-1-001/2026 겨울공모전/병아리 대탈출! 2026-02-28 04-25-27.mp4",
-      "start": 77.494,
-      "duration": 4
+      "id": "escape",
+      "title": "EscapeFactory"
     },
     {
-      "title": "새벽기차",
-      "award": null,
-      "source": "GameVideo/2026 겨울공모전-20260904T064615Z-1-001/2026 겨울공모전/DawnTrain 2026-03-01 12-28-51.mp4",
-      "start": 35.372,
-      "duration": 4
+      "id": "chick",
+      "title": "병아리 대탈출!"
     },
     {
-      "title": "드래곤전",
-      "award": null,
-      "source": "GameVideo/2025 여름공모전-20260904T064619Z-1-001/2025 여름공모전/다이소겜마루점 - [드래곤전] 플레이 영상 (1)/다이소겜마루점 - [드래곤전] 플레이 영상/다이소겜마루점-[드래곤전]플레이 영상 MP4.mov",
-      "start": 492.219,
-      "duration": 4
+      "id": "chrono",
+      "title": "ChronoFactory"
+    },
+    {
+      "id": "beat",
+      "title": "Escape on Beat"
+    },
+    {
+      "id": "train",
+      "title": "새벽기차"
+    },
+    {
+      "id": "dragon",
+      "title": "드래곤전"
+    },
+    {
+      "id": "grad",
+      "title": "감금학과대학원"
+    }
+  ],
+  "timeline": [
+    {
+      "at": 0,
+      "duration": 2.4,
+      "games": [
+        "마나 리로디드"
+      ],
+      "transition": "fade",
+      "chapter": "PRESS PLAY"
+    },
+    {
+      "at": 1.7,
+      "duration": 2.2,
+      "games": [
+        "신출귀몰"
+      ],
+      "transition": "diagtl",
+      "chapter": null
+    },
+    {
+      "at": 3.6,
+      "duration": 2.4,
+      "games": [
+        "EscapeFactory"
+      ],
+      "transition": "smoothleft",
+      "chapter": null
+    },
+    {
+      "at": 5.7,
+      "duration": 2.3,
+      "games": [
+        "병아리 대탈출!"
+      ],
+      "transition": "circleopen",
+      "chapter": null
+    },
+    {
+      "at": 7.7,
+      "duration": 3.3,
+      "games": [
+        "마나 리로디드",
+        "신출귀몰",
+        "병아리 대탈출!",
+        "드래곤전"
+      ],
+      "transition": "pixelize",
+      "chapter": "DIFFERENT WORLDS. SAME PLAY."
+    },
+    {
+      "at": 10.7,
+      "duration": 2.2,
+      "games": [
+        "PLANET1101"
+      ],
+      "transition": "smoothright",
+      "chapter": null
+    },
+    {
+      "at": 12.6,
+      "duration": 2.4,
+      "games": [
+        "감금학과대학원"
+      ],
+      "transition": "fade",
+      "chapter": null
+    },
+    {
+      "at": 14.7,
+      "duration": 2.2,
+      "games": [
+        "ChronoFactory"
+      ],
+      "transition": "slideup",
+      "chapter": null
+    },
+    {
+      "at": 16.6,
+      "duration": 2.8,
+      "games": [
+        "PLANET1101",
+        "PigmentEscape",
+        "Escape on Beat",
+        "ChronoFactory"
+      ],
+      "transition": "pixelize",
+      "chapter": "FIND YOUR NEXT WORLD"
+    },
+    {
+      "at": 19.1,
+      "duration": 2.4,
+      "games": [
+        "AfterBed"
+      ],
+      "transition": "smoothleft",
+      "chapter": null
+    },
+    {
+      "at": 21.2,
+      "duration": 2.4,
+      "games": [
+        "새벽기차"
+      ],
+      "transition": "fade",
+      "chapter": null
+    },
+    {
+      "at": 23.3,
+      "duration": 2.4,
+      "games": [
+        "드래곤전"
+      ],
+      "transition": "wipeup",
+      "chapter": null
+    },
+    {
+      "at": 25.4,
+      "duration": 3.1,
+      "games": [
+        "AfterBed",
+        "ChronoFactory",
+        "EscapeFactory",
+        "감금학과대학원"
+      ],
+      "transition": "pixelize",
+      "chapter": "BUILT BY GAMMARU"
+    },
+    {
+      "at": 28.5,
+      "duration": 1.4,
+      "games": [
+        "병아리 대탈출!"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 29.9,
+      "duration": 1.4,
+      "games": [
+        "신출귀몰"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 31.3,
+      "duration": 1.4,
+      "games": [
+        "마나 리로디드"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 32.7,
+      "duration": 1.4,
+      "games": [
+        "EscapeFactory"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 34.1,
+      "duration": 1.4,
+      "games": [
+        "PLANET1101"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 35.5,
+      "duration": 1.6,
+      "games": [
+        "드래곤전"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 37.1,
+      "duration": 1.6,
+      "games": [
+        "감금학과대학원"
+      ],
+      "transition": "cut",
+      "chapter": null
+    },
+    {
+      "at": 38.4,
+      "duration": 3,
+      "games": [
+        "병아리 대탈출!",
+        "신출귀몰",
+        "EscapeFactory",
+        "마나 리로디드"
+      ],
+      "transition": "smoothup",
+      "chapter": "ONE MORE ROUND"
     }
   ]
 }

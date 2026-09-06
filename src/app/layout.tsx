@@ -54,17 +54,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SiteHeader />
         <main id="main-content">{children}</main>
         <SiteFooter />
-        <div className="hero-reel__wipe">
-          <div className="hero-loader" role="status" aria-live="polite" aria-label="로딩 중">
-            <span className="hero-loader__label" aria-hidden="true">
-              <span className="hero-loader__typing">로딩 중</span>
-              <i className="hero-loader__cursor" />
-            </span>
-            <span className="hero-loader__dots" aria-hidden="true">
-              <i>.</i><i>.</i><i>.</i><i>.</i>
-            </span>
-          </div>
-        </div>
       </body>
     </html>
   );

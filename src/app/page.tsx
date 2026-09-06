@@ -1,5 +1,3 @@
-import { existsSync } from "node:fs";
-import path from "node:path";
 import Link from "next/link";
 import { GameCard } from "@/components/GameCard";
 import { HeroReel } from "@/components/HeroReel";
@@ -9,14 +7,11 @@ import { archiveGames, featuredGames } from "@/data/archive";
 import { activities, logEntries, siteConfig } from "@/data/site";
 
 export default function Home() {
-  const hasHeroVideo = ["hero-reel.webm", "hero-reel.mp4"].some((file) =>
-    existsSync(path.join(process.cwd(), "public", "media", file)),
-  );
   const seasonCount = new Set(archiveGames.map((game) => `${game.year}-${game.season}`)).size;
 
   return (
     <div className="home-page">
-      <HeroReel enabled={hasHeroVideo} />
+      <HeroReel />
       <section className="hero">
         <div className="hero__frame" aria-hidden="true">
           <span className="hero__corner hero__corner--tl" />

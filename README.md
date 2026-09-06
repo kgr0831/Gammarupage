@@ -14,8 +14,10 @@ npm run dev
 - 공식 SNS 주소: `src/data/site.ts`의 `siteConfig.social`
 - 활동과 공개 기록: `src/data/site.ts`
 - 작품별 YouTube: `src/data/archive/video-manifest.json`
-- 메인 쇼릴: `public/media/hero-reel.webm` 또는 `public/media/hero-reel.mp4`
-- 쇼릴 원본 선택 및 재생성: `scripts/build-hero-reel.mjs`
+- 메인 쇼릴: `public/media/reel/<콘텐츠 해시>/` (HLS 분할 영상)
+- 쇼릴 경로 및 편집 명세: `src/data/hero-reel-manifest.json`
+- 쇼릴 원본 선택 및 편집: `scripts/build-reel-preview.mjs`
+- 배포용 인코딩 및 분할: `scripts/package-hero-reel.mjs`
 - 쇼릴 편집 규칙: `public/media/README.md`
 
 작품별 YouTube 연결 예시:
@@ -36,11 +38,13 @@ npm run import:archive
 
 ## 쇼릴 재생성
 
-`GameVideo` 폴더가 로컬에 있을 때 아래 명령으로 1080p 무음 MP4/WebM을 다시 만들 수 있습니다.
+`GameVideo` 폴더가 로컬에 있을 때 아래 명령으로 무음 반복 영상과 540p/1080p AV1·H.264 HLS를 다시 만들 수 있습니다. 인코딩은 로컬에서 수행하며 Vercel 빌드에서는 이미 생성된 파일을 사용합니다.
 
 ```bash
 npm run assets:reel
 ```
+
+편집된 `test-results/reel-v2/gammaru-reel-v2.mp4`와 `manifest.json`, `poster.jpg`가 있다면 `npm run assets:reel:package`로 배포 파일만 생성할 수 있습니다. 편집 미리보기는 `npm run preview:reel` 실행 후 `http://127.0.0.1:3188`에서 확인합니다. 미리보기용 단일 AV1 파일은 선택적으로 `node scripts/build-reel-preview.mjs --av1`로 생성합니다.
 
 원본 영상 폴더는 저장소에서 제외되며, 사이트가 실제로 재생하는 편집본과 사용 구간 명세만 버전 관리합니다.
 
@@ -51,6 +55,7 @@ npm run typecheck
 npm run lint
 npm run build
 npm run test:smoke -- http://127.0.0.1:3000
+npm run test:reel -- http://127.0.0.1:3000
 ```
 
 GitHub Pages용 정적 결과물은 Actions 환경과 같은 경로로 확인할 수 있습니다.
@@ -63,3 +68,5 @@ npm run test:smoke -- http://127.0.0.1:4173/Gammarupage
 
 `main` 브랜치에 반영되면 GitHub Actions가 `https://kgr0831.github.io/Gammarupage/`로 배포합니다.
 빌드 후처리는 GitHub Pages의 정적 파일 규칙에서도 Next.js 탭 이동과 프리페치가 유지되도록 클라이언트 탐색 파일 별칭을 함께 생성합니다.
+
+Vercel에서는 기본 `npm run build`를 사용합니다. 콘텐츠 해시가 포함된 영상 경로에 1년 immutable 캐시 헤더를 적용합니다. GitHub Pages의 캐시 정책은 플랫폼에서 관리하며 Next.js 헤더 설정은 적용되지 않습니다.

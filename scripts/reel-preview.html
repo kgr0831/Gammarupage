@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GAMMARU · Reel 02</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;background:#080918;color:#f4f0e8;font-family:Arial,"Malgun Gothic",sans-serif}main{max-width:1520px;margin:auto;padding:36px 40px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}.brand{font-size:19px;font-weight:900;letter-spacing:4px}.edition{font-size:12px;letter-spacing:3px;color:#b8ee63}.intro{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:22px}h1{font-size:clamp(28px,3.5vw,54px);letter-spacing:-2px;margin:0 0 10px}.sub{color:#a5a6b8;font-size:14px;line-height:1.7;margin:0}.controls{display:flex;gap:8px;flex-wrap:wrap}button,a{border:1px solid #353746;background:transparent;color:#f4f0e8;padding:11px 15px;font:inherit;font-size:12px;text-decoration:none;cursor:pointer}button[aria-pressed=true]{background:#b8ee63;border-color:#b8ee63;color:#080918}.screen{position:relative;background:#10121d;aspect-ratio:16/9;overflow:hidden;border:1px solid #333647}video{width:100%;height:100%;display:block;object-fit:cover}.site-copy{position:absolute;inset:0;padding:8% 7%;background:linear-gradient(90deg,rgba(8,9,24,.85),rgba(8,9,24,.1));pointer-events:none;display:none}.background .site-copy{display:block}.site-copy strong{display:block;font-size:clamp(24px,5vw,88px);line-height:1.04;letter-spacing:-3px}.site-copy em{font-style:normal;color:#ef62bd}.site-copy p{font-size:clamp(12px,1.4vw,21px);margin-top:24px}.foot{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:20px;color:#a5a6b8;font-size:13px;line-height:1.8}.foot a{display:inline-block}.line{height:2px;background:#ef62bd;width:0;transition:width .1s linear}#status{color:#b8ee63}.error{display:none;padding:14px;border:1px solid #ef62bd;color:#ef62bd}.error.visible{display:block}@media(max-width:700px){main{padding:22px 16px}.intro{display:block}.controls{margin-top:18px}header{margin-bottom:28px}.edition{font-size:9px}.foot{align-items:start}.site-copy strong{letter-spacing:-1px}}
+</style>
+<main>
+  <header><div class="brand">GAMMARU</div><div class="edition">PLAY REEL / CUT 02</div></header>
+  <div class="intro"><div><h1>더 많은 세계, 더 빠른 템포.</h1><p class="sub">12개 게임 · 짧은 플레이 컷 · 모자이크 전환 · 무한 반복</p></div><div class="controls"><button id="clean" aria-pressed="true">영상 보기</button><button id="background" aria-pressed="false">홈 배경 미리보기</button><button id="restart">처음부터</button></div></div>
+  <div class="screen" id="screen"><video id="video" poster="poster.jpg?v=no-camera" autoplay muted loop playsinline controls preload="auto"><source src="gammaru-reel-v2-av1.mp4?v=no-camera" type='video/mp4; codecs="av01.0.08M.08"'><source src="gammaru-reel-v2.mp4?v=no-camera" type="video/mp4"></video><div class="site-copy"><strong>THE BUILD<br>IS OUR<br><em>INTRODUCTION.</em></strong><p>우리가 만든 게임으로 소개합니다.</p></div></div>
+  <div class="line" id="progress"></div>
+  <p class="error" id="error">브라우저에서 재생하지 못했습니다. 아래 MP4 파일을 내려받아 확인해 주세요.</p>
+  <div class="foot"><div><span id="status">재생 준비 중</span><br><span id="description">완성본은 자동으로 반복됩니다.</span></div><div class="controls"><a href="gammaru-reel-v2-av1.mp4" download>AV1 다운로드 ↗</a><a href="gammaru-reel-v2.mp4" download>호환 MP4 다운로드 ↗</a></div></div>
+</main>
+<script>
+  const video=document.getElementById('video');
+  const screen=document.getElementById('screen');
+  const status=document.getElementById('status');
+  let manifest=null;
+  function showDescription(){if(!manifest)return;const codec=video.currentSrc.includes('-av1.')?'av1':'mp4';const file=manifest.files[codec];document.getElementById('description').textContent=`${manifest.duration.toFixed(1)}초 / 1920 × 1080 / 무음 / ${codec==='av1'?'AV1':'H.264'}${file?` / ${(file.bytes/1e6).toFixed(1)} MB`:''}`;}
+  fetch('manifest.json').then(r=>r.json()).then(data=>{manifest=data;showDescription();});
+  video.addEventListener('loadedmetadata',showDescription);
+  for(const mode of ['clean','background'])document.getElementById(mode).onclick=()=>{screen.classList.toggle('background',mode==='background');for(const id of ['clean','background'])document.getElementById(id).setAttribute('aria-pressed',String(id===mode));};
+  document.getElementById('restart').onclick=()=>{video.currentTime=0;video.play().catch(()=>{status.textContent='재생 버튼을 눌러 주세요';});};
+  video.addEventListener('timeupdate',()=>{const shot=manifest?.timeline.findLast(item=>item.at<=video.currentTime);status.textContent=`${video.currentTime.toFixed(1)}s / ${shot?.games.join(' · ')??'GAMMARU'}`;document.getElementById('progress').style.width=`${100*video.currentTime/video.duration}%`;});
+  video.addEventListener('error',()=>document.getElementById('error').classList.add('visible'));
+  video.play().catch(()=>{status.textContent='재생 버튼을 눌러 주세요';});
+</script>
+</html>

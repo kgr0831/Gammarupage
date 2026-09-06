@@ -13,7 +13,8 @@ const routeUrl = (route) => {
 };
 
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  // Media loading/looping is covered separately by test:reel.
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
   page.on("pageerror", (error) => errors.push(`pageerror: ${String(error)}`));
   page.on("response", (response) => {
     if (response.status() >= 400) errors.push(`response: ${response.status()} ${response.url()}`);
@@ -56,7 +57,7 @@ try {
     { width: 1920, height: 1080, name: "full HD" },
     { width: 390, height: 844, name: "mobile" },
   ]) {
-    const responsive = await browser.newPage({ viewport });
+    const responsive = await browser.newPage({ viewport, reducedMotion: "reduce" });
     for (const route of ["/", "/games", "/activities", "/about", "/log"]) {
       await responsive.goto(routeUrl(route), { waitUntil: "networkidle" });
       const overflow = await responsive.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -65,7 +66,7 @@ try {
     await responsive.close();
   }
 
-  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await mobile.goto(routeUrl("/"), { waitUntil: "networkidle" });
   const menu = mobile.locator(".menu-toggle");
   assert(await menu.isVisible(), "Mobile menu is not visible");
