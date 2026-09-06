@@ -5,7 +5,8 @@ import { chromium } from "playwright";
 
 const base = (process.argv.find((argument) => argument.startsWith("http")) || "http://127.0.0.1:3000").replace(/\/$/, "");
 const games = JSON.parse(await readFile("src/data/archive/games.json", "utf8"));
-const stills = JSON.parse(await readFile("src/data/archive/video-stills.json", "utf8"));
+const manualImages = JSON.parse(await readFile("src/data/archive/manual-images.json", "utf8"));
+const stills = { ...JSON.parse(await readFile("src/data/archive/video-stills.json", "utf8")), ...manualImages };
 const route = (game) => `${base}/games/${game.year}/${game.season}/${encodeURIComponent(game.slug)}`;
 const browser = await chromium.launch({ channel: "msedge", headless: true }).catch(() => chromium.launch({ headless: true }));
 const errors = [];
@@ -19,11 +20,12 @@ try {
   });
   for (const [uid, media] of Object.entries(stills)) {
     const game = games.find((item) => item.uid === uid);
-    assert(game, `Unknown captured game: ${uid}`);
+    assert(game, `Unknown supplemental image game: ${uid}`);
     assert.equal(game.media.cover, null, `Original cover should be preserved: ${uid}`);
     for (const image of [media.cover, ...media.screenshots]) {
       for (const [format, file] of Object.entries(image)) {
-        assert(file.startsWith(`/archive/video-stills/${uid}/`), `Mismatched game image: ${file}`);
+        const directory = Object.hasOwn(manualImages, uid) ? "manual-images" : "video-stills";
+        assert(file.startsWith(`/archive/${directory}/${uid}/`), `Mismatched game image: ${file}`);
         const metadata = await sharp(await readFile(`public${file}`)).metadata();
         assert(metadata.width > 0 && metadata.width <= 1280 && metadata.height > 0 && metadata.height <= 900, `Invalid dimensions: ${file}`);
         assert.equal(metadata.format, format === "avif" ? "heif" : "webp");
@@ -50,7 +52,7 @@ try {
   for (const uid of Object.keys(stills)) {
     const game = games.find((item) => item.uid === uid);
     const card = page.locator(".game-card").filter({ has: page.getByRole("heading", { name: game.title, exact: true }) });
-    assert.equal(await card.locator('img[src*="/archive/video-stills/"]').count(), 1, `Missing card image: ${uid}`);
+    assert((await card.locator("img").getAttribute("src")).endsWith(stills[uid].cover.webp), `Missing card image: ${uid}`);
   }
 
   const original = games.find((game) => game.media.cover);

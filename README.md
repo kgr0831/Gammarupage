@@ -15,6 +15,7 @@ npm run dev
 - 활동과 공개 기록: `src/data/site.ts`
 - 작품별 YouTube: `src/data/archive/video-manifest.json`
 - 영상 캡처 이미지: `src/data/archive/video-stills.json` (기존 이미지가 없을 때 사용)
+- 직접 제공된 게임 이미지: `src/data/archive/manual-images.json` 및 `public/archive/manual-images/` (아카이브 재수집·영상 재캡처 시에도 유지)
 - 캡처 원본·게임 UID·시점: `scripts/video-stills.config.json`
 - 메인 쇼릴: `public/media/reel/<콘텐츠 해시>/` (HLS 분할 영상)
 - 쇼릴 경로 및 편집 명세: `src/data/hero-reel-manifest.json`
