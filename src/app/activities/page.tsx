@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { activities } from "@/data/site";
 
 export const metadata: Metadata = {
@@ -64,9 +65,19 @@ export default function ActivitiesPage() {
         <div className="media-ledger__items">
           {publicVideos.map((video, index) => (
             <a className="video-poster reveal" href={video.href} target="_blank" rel="noreferrer" key={video.id}>
+              {/* Fetch directly from YouTube without Vercel image transformations. */}
+              <Image
+                className="video-poster__image"
+                src={`https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`}
+                alt=""
+                fill
+                unoptimized
+                loading="lazy"
+                sizes="(max-width: 760px) 100vw, 50vw"
+              />
               <span className="video-poster__number">0{index + 1}</span>
               <div className="video-poster__play" aria-hidden="true">▶</div>
-              <div><p>{video.label}</p><h3>{video.title}</h3></div>
+              <div className="video-poster__caption"><p>{video.label}</p><h3>{video.title}</h3></div>
             </a>
           ))}
         </div>

@@ -31,6 +31,18 @@ try {
     assert(await page.locator("h1").first().isVisible(), `${route} has no visible h1`);
   }
 
+  await page.goto(routeUrl("/activities"), { waitUntil: "networkidle" });
+  const videoPosters = page.locator(".video-poster");
+  assert(await videoPosters.count() === 2, "Activities video links are missing");
+  for (const poster of await videoPosters.all()) {
+    await poster.scrollIntoViewIfNeeded();
+    const thumbnail = poster.locator("img.video-poster__image");
+    await thumbnail.evaluate((image) => image.decode());
+    assert(await thumbnail.evaluate((image) => image.naturalWidth >= 640), "YouTube thumbnail is missing or a placeholder");
+    const videoId = new URL(await poster.getAttribute("href")).pathname.slice(1);
+    assert((await thumbnail.getAttribute("src")) === `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`, "Thumbnail does not match its video link");
+  }
+
   await page.goto(routeUrl("/games"), { waitUntil: "networkidle" });
   await page.locator('input[type="search"]').fill("SLab");
   await page.waitForTimeout(80);

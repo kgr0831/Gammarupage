@@ -4,11 +4,12 @@ import { useEffect, useRef } from "react";
 import type Hls from "hls.js";
 import reel from "@/data/hero-reel-manifest.json";
 import { assetPath } from "@/lib/paths";
+import { HeroReelCredits, type ReelCreditCue } from "./HeroReelCredits";
 
 type Connection = EventTarget & { saveData?: boolean };
 type Candidate = { kind: "hls" | "native" | "mp4"; url: string; codec: string };
 
-export function HeroReel() {
+export function HeroReel({ credits }: { credits: ReelCreditCue[] }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -197,14 +198,17 @@ export function HeroReel() {
   }, []);
 
   return (
-    <div className="hero-reel" aria-hidden="true">
-      {/* No source in server HTML: honor preferences before any video request. */}
-      <img className="hero-reel__poster" src={assetPath(reel.poster)} alt="" fetchPriority="high" />
-      <video ref={videoRef} muted loop playsInline preload="none" tabIndex={-1} disablePictureInPicture />
-      <img className="hero-reel__mark" src={assetPath("/brand/gammaru-3d.png")} alt="" />
-      <div className="hero-reel__ink" />
-      <div className="hero-reel__dots" />
-    </div>
+    <>
+      <div className="hero-reel" aria-hidden="true">
+        {/* No source in server HTML: honor preferences before any video request. */}
+        <img className="hero-reel__poster" src={assetPath(reel.poster)} alt="" fetchPriority="high" />
+        <video ref={videoRef} muted loop playsInline preload="none" tabIndex={-1} disablePictureInPicture />
+        <img className="hero-reel__mark" src={assetPath("/brand/gammaru-3d.png")} alt="" />
+        <div className="hero-reel__ink" />
+        <div className="hero-reel__dots" />
+      </div>
+      <HeroReelCredits videoRef={videoRef} cues={credits} />
+    </>
   );
 }
 

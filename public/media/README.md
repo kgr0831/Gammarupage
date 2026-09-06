@@ -11,6 +11,11 @@ There is no added camera pan or zoom. The last shot blends into the first.
   variants, fMP4 initialization files and 4-second segments (last: 1.4 seconds).
 - H.264 fast-start MP4s remain only as a final compatibility fallback.
 - The poster renders immediately. The page never waits for video.
+- Bottom-right credits follow the video's presentation time, including seeks
+  and loops. `src/data/hero-reel-game-ids.json` maps reel IDs to archive UIDs;
+  the server supplies official game/team names, participant names/cohorts and
+  contest years/seasons without shipping the archive. Four-way shots use a 2x2
+  credit grid. This overlay does not re-encode media.
 - Reduced-motion or data-saver preferences prevent video requests entirely.
 - On MSE browsers, a lazy-loaded light hls.js player starts at 540p, adapts up
   on desktop, caps phones at 540p, and buffers about 8–12 seconds ahead

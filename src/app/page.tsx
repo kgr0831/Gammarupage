@@ -3,15 +3,41 @@ import { GameCard } from "@/components/GameCard";
 import { HeroReel } from "@/components/HeroReel";
 import { RoleDeck } from "@/components/RoleDeck";
 import { SectionHeading } from "@/components/SectionHeading";
-import { archiveGames, featuredGames } from "@/data/archive";
+import { archiveGames, featuredGames, seasonNames } from "@/data/archive";
 import { activities, logEntries, siteConfig } from "@/data/site";
+import reel from "@/data/hero-reel-manifest.json";
+import reelGameIds from "@/data/hero-reel-game-ids.json";
+
+// Resolve archive records on the server; the browser only receives these credits.
+// Explicit UIDs distinguish games with the same name in different seasons.
+const creditByTitle = new Map(reel.games.map(({ id, title }) => {
+  const uid = (reelGameIds as Record<string, string>)[id];
+  const game = archiveGames.find((item) => item.uid === uid);
+  if (!game) throw new Error(`Missing hero reel game mapping: ${id}`);
+  return [title, {
+    uid: game.uid,
+    title: game.title,
+    team: game.team || "팀명 자료 정리 중",
+    creators: game.creators,
+    event: `${game.year} ${seasonNames[game.season].ko}`,
+  }];
+}));
+const reelCredits = reel.timeline.map((shot, index) => ({
+  // Crossfades/wipes overlap for 0.3s; change attribution at the midpoint.
+  at: shot.at + (index > 0 && shot.transition !== "cut" ? 0.15 : 0),
+  games: shot.games.map((title) => {
+    const credit = creditByTitle.get(title);
+    if (!credit) throw new Error(`Missing hero reel credit: ${title}`);
+    return credit;
+  }),
+}));
 
 export default function Home() {
   const seasonCount = new Set(archiveGames.map((game) => `${game.year}-${game.season}`)).size;
 
   return (
     <div className="home-page">
-      <HeroReel />
+      <HeroReel credits={reelCredits} />
       <section className="hero">
         <div className="hero__frame" aria-hidden="true">
           <span className="hero__corner hero__corner--tl" />

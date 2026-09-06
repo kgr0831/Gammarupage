@@ -16,6 +16,7 @@ npm run dev
 - 작품별 YouTube: `src/data/archive/video-manifest.json`
 - 메인 쇼릴: `public/media/reel/<콘텐츠 해시>/` (HLS 분할 영상)
 - 쇼릴 경로 및 편집 명세: `src/data/hero-reel-manifest.json`
+- 쇼릴 게임·팀·참여자·공모전 자막 매칭: `src/data/hero-reel-game-ids.json` (같은 제목의 다른 시즌을 구분하는 게임 UID)
 - 쇼릴 원본 선택 및 편집: `scripts/build-reel-preview.mjs`
 - 배포용 인코딩 및 분할: `scripts/package-hero-reel.mjs`
 - 쇼릴 편집 규칙: `public/media/README.md`
