@@ -14,6 +14,8 @@ npm run dev
 - 공식 SNS 주소: `src/data/site.ts`의 `siteConfig.social`
 - 활동과 공개 기록: `src/data/site.ts`
 - 작품별 YouTube: `src/data/archive/video-manifest.json`
+- 영상 캡처 이미지: `src/data/archive/video-stills.json` (기존 이미지가 없을 때 사용)
+- 캡처 원본·게임 UID·시점: `scripts/video-stills.config.json`
 - 메인 쇼릴: `public/media/reel/<콘텐츠 해시>/` (HLS 분할 영상)
 - 쇼릴 경로 및 편집 명세: `src/data/hero-reel-manifest.json`
 - 쇼릴 게임·팀·참여자·공모전 자막 매칭: `src/data/hero-reel-game-ids.json` (같은 제목의 다른 시즌을 구분하는 게임 UID)
@@ -37,6 +39,8 @@ npm run import:archive
 
 공개 아카이브의 JSON을 다시 가져와 정규화하고, 허용된 게임 이미지만 로컬 WebP/AVIF로 변환합니다. 완전히 빈 레코드는 제외하며 기존 slug와 수동 YouTube 매핑은 유지합니다.
 
+영상 캡처는 `GameVideo` 원본 폴더가 있는 로컬에서 `npm run assets:game-stills`로 생성합니다. 설정의 첫 번째 시점은 대표 이미지, 나머지는 상세 스크린샷입니다. 제목과 UID를 검증하고 정확히 일치하는 원본 파일에서 캡처하며, 기존 대표 이미지는 유지합니다. WebP·AVIF를 미리 생성하므로 사이트에서 영상 다운로드나 서버 이미지 변환이 필요하지 않습니다. 생성된 `public/archive/video-stills/`와 매니페스트를 함께 반영합니다. 캡처 매니페스트는 아카이브 재수집과 별도로 유지됩니다.
+
 ## 쇼릴 재생성
 
 `GameVideo` 폴더가 로컬에 있을 때 아래 명령으로 무음 반복 영상과 540p/1080p AV1·H.264 HLS를 다시 만들 수 있습니다. 인코딩은 로컬에서 수행하며 Vercel 빌드에서는 이미 생성된 파일을 사용합니다.
@@ -57,6 +61,7 @@ npm run lint
 npm run build
 npm run test:smoke -- http://127.0.0.1:3000
 npm run test:reel -- http://127.0.0.1:3000
+npm run test:details -- http://127.0.0.1:3000
 ```
 
 GitHub Pages용 정적 결과물은 Actions 환경과 같은 경로로 확인할 수 있습니다.

@@ -7,8 +7,8 @@ export const siteConfig = {
     subtitle: "설명보다 먼저, 겜마루가 만든 게임을 보여드립니다.",
   },
   social: [
-    { label: "INSTAGRAM", href: "https://instagram.com/", pending: true },
-    { label: "YOUTUBE", href: "https://youtube.com/", pending: true },
+    { label: "INSTAGRAM", href: "https://www.instagram.com/ssu_gammaru", pending: false },
+    { label: "YOUTUBE", href: "https://www.youtube.com/@gammaru9553", pending: false },
     { label: "GITHUB", href: "https://github.com/", pending: true },
   ],
   archiveSource: "https://gammaruforever.github.io/",

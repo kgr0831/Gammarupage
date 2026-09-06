@@ -1,8 +1,24 @@
 import gamesJson from "./games.json";
 import videoManifestJson from "./video-manifest.json";
+import videoStillsJson from "./video-stills.json";
 import type { ArchiveGame, ArchiveSeason } from "@/types/archive";
 
-export const archiveGames = gamesJson as ArchiveGame[];
+const videoStills = videoStillsJson as Record<string, Pick<ArchiveGame["media"], "cover" | "screenshots">>;
+
+// Keep locally captured artwork separate from the re-imported archive data.
+// Existing source artwork always takes priority, both on cards and detail pages.
+export const archiveGames: ArchiveGame[] = (gamesJson as ArchiveGame[]).map((game) => {
+  const stills = videoStills[game.uid];
+  if (!stills) return game;
+  return {
+    ...game,
+    media: {
+      ...game.media,
+      cover: game.media.cover ?? stills.cover,
+      screenshots: game.media.screenshots.length ? game.media.screenshots : stills.screenshots,
+    },
+  };
+});
 
 export const videoManifest = videoManifestJson as Record<
   string,

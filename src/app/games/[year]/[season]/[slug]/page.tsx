@@ -22,6 +22,10 @@ export default async function GameDetailPage({ params }: { params: Promise<{ yea
   const found = getGame(Number(year), season, slug);
   if (!found) notFound();
   const game = withVideo(found);
+  // A conservative em budget keeps the complete title on one line without
+  // client-side measurement or truncation.
+  const titleWidth = Array.from(game.title).reduce((width, character) =>
+    width + (/\s/u.test(character) ? 0.35 : /[\u0021-\u007e]/u.test(character) ? 0.75 : 1), 0);
   const related = archiveGames
     .filter((item) => item.uid !== game.uid && item.year === game.year && item.season === game.season)
     .slice(0, 3);
@@ -37,7 +41,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ yea
         <div className="game-detail__copy">
           <p className="page-code">{game.year} / {game.seasonLabel}</p>
           {game.award.code && <span className="detail-award">수상 기록 / {game.award.label}</span>}
-          <h1 className={game.title.length > 18 ? "game-detail__long-title" : undefined}>{game.title}</h1>
+          <h1 style={{ fontSize: `min(clamp(2.5rem, 6.2vw, 7rem), ${(100 / Math.max(1, titleWidth)).toFixed(3)}cqw)` }}>{game.title}</h1>
           <p className="game-detail__team">{game.team || "팀명 자료 정리 중"}</p>
           <div className="game-detail__facts">
             <div><span>GENRE</span><strong>{game.genre || "자료 정리 중"}</strong></div>

@@ -1,0 +1,13 @@
+[
+  { "uid": "g-2026-wi-001", "title": "감금학과대학원", "source": "감금학과대학원 2026-03-01 11-33-24.mp4", "seconds": [975, 450, 1329] },
+  { "uid": "g-2026-wi-003", "title": "AfterBed", "source": "After bed 2026-03-01 13-28-15.mp4", "seconds": [1797.25, 1372.45, 816.93] },
+  { "uid": "g-2026-wi-004", "title": "PigmentEscape", "source": "PigmentEscape 2026-02-26 17-40-32.mp4", "seconds": [23.83, 18, 32.5] },
+  { "uid": "g-2026-wi-005", "title": "크로노팩토리", "source": "ChronoFactory 2026-03-01 12-07-51.mp4", "seconds": [320.36, 190.69, 419.52] },
+  { "uid": "g-2026-wi-006", "title": "Escape Factory", "source": "EscapeFactory_플레이영상.mp4", "seconds": [30, 18.69, 41.12] },
+  { "uid": "g-2026-wi-008", "title": "병아리대탈출", "source": "병아리 대탈출! 2026-02-28 04-25-27.mp4", "seconds": [101.48, 77.49, 138.38] },
+  { "uid": "g-2026-wi-009", "title": "PLANET1101", "source": "PLANET1101 2026-03-01 13-08-55.mp4", "seconds": [87.51, 66, 119.32] },
+  { "uid": "g-2026-wi-010", "title": "Keys", "source": "MyProject2   2026-03-01 14-52-45.mp4", "seconds": [35, 65, 100] },
+  { "uid": "g-2026-wi-011", "title": "어비스캐빈저", "source": "asdf 2026-03-01 13-13-37.mp4", "seconds": [8, 100, 350] },
+  { "uid": "g-2026-wi-012", "title": "Escape on Beat", "source": "escapr on beat 2026-03-01 14-27-27.mp4", "seconds": [105.93, 80, 144.45] },
+  { "uid": "g-2026-wi-013", "title": "새벽기차", "source": "DawnTrain 2026-03-01 12-28-51.mp4", "seconds": [46.32, 35.37, 63.16], "crop": { "left": 0, "top": 210, "width": 1920, "height": 660 } }
+]

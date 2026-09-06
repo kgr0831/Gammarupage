@@ -11,8 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test:smoke": "node scripts/smoke.mjs",
     "test:reel": "node scripts/test-hero-reel.mjs",
+    "test:details": "node scripts/test-game-details.mjs",
     "import:archive": "node scripts/import-archive.mjs --download-media",
     "assets:brand": "node scripts/build-brand-assets.mjs",
+    "assets:game-stills": "node scripts/capture-game-stills.mjs",
     "assets:reel": "node scripts/build-reel-preview.mjs && node scripts/package-hero-reel.mjs",
     "assets:reel:package": "node scripts/package-hero-reel.mjs",
     "preview:reel": "node scripts/preview-reel.mjs"

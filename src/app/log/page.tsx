@@ -38,7 +38,7 @@ export default function LogPage() {
         <div className="social-terminal__links">
           {siteConfig.social.map((item) => (
             <a key={item.label} href={item.href} target="_blank" rel="noreferrer">
-              <span>{item.label}</span><small>주소 연결 예정</small>
+              <span>{item.label}</span><small>{item.pending ? "주소 연결 예정" : "공식 채널 방문 ↗"}</small>
             </a>
           ))}
         </div>
