@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   // The live site is on Vercel. Authenticated HTML uploads need request-time routes.
   outputFileTracingIncludes: {
-    "/reports/**": ["./funding/portal/style.css", "./Design.md", "./gammaruInfo.md"],
+    "/reports/**": ["./funding/portal/style.css", "./Design.md", "./gammaruInfo.md", "./docs/dots-daily-brief.md"],
   },
   outputFileTracingExcludes: {
     "/**": [".env*", "funding/data/**", "funding/.codex/**", "test-results/**"],

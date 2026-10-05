@@ -7,6 +7,8 @@ import { briefConfig } from "./config.mjs";
 import { BriefStore, PrivateBlobFiles } from "./storage.mjs";
 import { deliverBriefLinks, deliverLoginNotice, deliverApprovalNotice } from "./notify.mjs";
 import * as view from "./views.mjs";
+import { readableReport } from "./reader.mjs";
+import { researchState, parseManifest, progressLabels } from "./opportunities.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const security = {
@@ -179,12 +181,17 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (["approve", "notify"].includes(match[2])) scheduleApproval(match[1], noticeId);
         return redirect("/reports/admin");
       }
-      if (/^\/reports\/(upload(?:\/|$)|notify$|design$|context$)/.test(pathname)) {
+      if (pathname === "/reports/research-state" && request.method === "GET") {
+        check(publisher, "조사용 진행 기록에는 업로드 권한이 필요합니다.", 403);
+        return send(JSON.stringify(researchState(data), null, 2), 200, "application/json; charset=utf-8");
+      }
+      if (/^\/reports\/(upload(?:\/|$)|notify$|design$|context$|instructions$)/.test(pathname)) {
         if (!publisher && request.method === "GET") return redirect("/reports/login/publisher");
         check(publisher, "HTML 업로드 권한이 필요합니다.", 403);
         if (pathname === "/reports/upload" && request.method === "GET") return send(view.upload(today, session.role, data.reports.find((r) => r.date === url.searchParams.get("published")), Object.values(data.deliveries), notificationsEnabled, channelId));
         if (pathname === "/reports/design" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "Design.md"), "utf8"), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/context" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8"), 200, "text/plain; charset=utf-8");
+        if (pathname === "/reports/instructions" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
           if (channelId) await store.queueChannelReport(today, channelId);
           scheduleNotifications(); return redirect("/reports/upload");
@@ -192,7 +199,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         const draftFile = pathname.match(/^\/reports\/upload\/preview\/([a-f0-9-]{36})\/html$/);
         if (draftFile && request.method === "GET") {
           const draft = await store.draft(draftFile[1], sessionHash);
-          return new Response(draft.html, { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8" } });
+          return new Response(url.searchParams.get("reading") === "1" ? readableReport(draft.html) : draft.html, { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8" } });
         }
         if (pathname === "/reports/upload/preview" && request.method === "POST") {
           const form = await formData(request), file = form.get("html");
@@ -214,12 +221,37 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (!session && request.method === "GET") return send(view.login("member", oauthConfigured, !!channelId));
       if (member && !readable && pathname === "/reports" && request.method === "GET") return redirect("/reports/account");
       check(readable, "승인된 구독자만 보고서를 볼 수 있습니다.", 403);
+      if (pathname === "/reports/progress" && request.method === "GET") {
+        const filter = url.searchParams.get("status") || "";
+        check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
+        return send(view.progressPage(data.opportunities, session.role, filter));
+      }
+      const progressMatch = pathname.match(/^\/reports\/opportunities\/([a-z0-9-]{3,80})\/status$/);
+      if (progressMatch && request.method === "POST") {
+        check(readable, "승인된 구독자와 관리자만 진행 상태를 변경할 수 있습니다.", 403);
+        const form = await formData(request), date = textField(form, "date");
+        check(!date || data.reports.some((report) => report.date === date && report.opportunities?.some((item) => item.id === progressMatch[1])), "해당 보고서의 진행 항목이 아닙니다.");
+        const revision = textField(form, "revision");
+        check(/^\d+$/.test(revision), "진행 기록 버전을 확인해 주세요.");
+        await store.setProgress(progressMatch[1], { status: textField(form, "status"), note: textField(form, "note"), revision: Number(revision) }, session.subject, admin ? null : member.id);
+        return redirect(date ? `/reports/${date}?progress=${progressMatch[1]}#progress-${progressMatch[1]}` : `/reports/progress#progress-${progressMatch[1]}`);
+      }
+      const attachMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})\/opportunities$/);
+      if (attachMatch && request.method === "POST") {
+        check(admin, "기존 보고서의 진행 항목은 관리자만 연결할 수 있습니다.", 403);
+        const form = await formData(request);
+        await store.attachOpportunities(attachMatch[1], parseManifest(textField(form, "manifest")));
+        return redirect(`/reports/${attachMatch[1]}?progress=1`);
+      }
       if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1)));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);
       check(reportMatch && request.method === "GET", "페이지를 찾을 수 없습니다.", 404);
       const report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);
-      if (reportMatch[2]) return new Response(await store.html(report), { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `inline; filename="gammaru-${report.date}.html"` } });
-      return send(view.viewer(report, session.role));
+      if (reportMatch[2]) {
+        const html = await store.html(report);
+        return new Response(url.searchParams.get("reading") === "1" ? readableReport(html) : html, { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `inline; filename="gammaru-${report.date}.html"` } });
+      }
+      return send(view.viewer(report, session.role, data.opportunities, url.searchParams.get("progress") || ""));
     } catch (error) {
       return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports">보고서 목록</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a></section>`), error.status || 503);
     }

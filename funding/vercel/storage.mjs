@@ -1,6 +1,7 @@
 import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
+import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
 
 const INDEX = "gammaru/briefs/index-v1.json";
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
@@ -46,6 +47,8 @@ export class BriefStore {
     const saved = await this.files.read(INDEX);
     const state = saved ? JSON.parse(saved.text) : empty();
     check(state.version === 1 && Array.isArray(state.reports), "저장소 형식을 확인해 주세요.", 503);
+    state.opportunities ??= {};
+    state.workflowVersion ??= 0;
     return { state, etag: saved?.etag ?? null };
   }
   async read() { return (await this.snapshot()).state; }
@@ -66,7 +69,7 @@ export class BriefStore {
     check(typeof input.summary === "string" && input.summary.length <= 500, "요약은 500자까지 입력할 수 있습니다.");
     check(typeof input.html === "string" && Buffer.byteLength(input.html) <= 2 * 1024 * 1024 && /<html[\s>]/i.test(input.html) && /<body[\s>]/i.test(input.html), "UTF-8 형식의 완성된 HTML 파일(최대 2MB)이 필요합니다.");
     const id = randomUUID();
-    const draft = { ...input, title: input.title.trim(), id, owner, hash: digest(input.html), expires: Date.now() + 1800000 };
+    const draft = { ...input, title: input.title.trim(), manifest: manifestFromHtml(input.html), id, owner, hash: digest(input.html), expires: Date.now() + 1800000 };
     await this.files.write(`gammaru/briefs/drafts/${id}.json`, JSON.stringify(draft));
     return draft;
   }
@@ -90,6 +93,7 @@ export class BriefStore {
         return { report: existing, duplicate: true };
       }
       const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: new Date().toISOString() };
+      registerOpportunities(state, report, manifestFromHtml(draft.html));
       state.reports.push(report);
       if (draft.date === today && draft.notify) {
         if (channelId) queueChannel(state, draft.date, channelId);
@@ -102,6 +106,21 @@ export class BriefStore {
   }
   async queueChannelReport(today, channelId) {
     return this.update((state) => queueChannel(state, today, channelId));
+  }
+  async setProgress(id, input, actor, memberId = null) {
+    return this.update((state) => {
+      check(!memberId || state.members[memberId]?.status === "approved", "구독 승인이 변경되어 진행 기록을 저장할 수 없습니다.", 403);
+      return changeProgress(state, id, input, actor);
+    });
+  }
+  async attachOpportunities(date, input) {
+    const manifest = validateManifest(input);
+    return this.update((state) => {
+      const report = state.reports.find((entry) => entry.date === date);
+      check(report, "보고서를 찾을 수 없습니다.", 404);
+      check(!report.opportunities, "이미 진행 항목이 연결된 보고서입니다.", 409);
+      registerOpportunities(state, report, manifest);
+    });
   }
   async html(report) {
     const saved = await this.files.read(report.path);

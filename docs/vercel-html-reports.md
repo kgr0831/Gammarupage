@@ -11,6 +11,10 @@
 | `/reports` | 최신순 누적 목록, 날짜·제목·요약 검색, 30개씩 페이지 이동 |
 | `/reports/YYYY-MM-DD` | 보고서와 전체 목록으로 돌아가는 링크 |
 | `/reports/YYYY-MM-DD/html` | HTML 원문 보기, 동일한 구독 권한 검사 |
+| `/reports/YYYY-MM-DD/html?reading=1` | 원문은 보존하고 글자·간격·한 열 배치를 적용한 읽기 화면 |
+| `/reports/progress` | 모든 보고서의 공유 진행 현황·메모. 관리자와 승인된 구독자 모두 변경 |
+| `/reports/research-state` | dots용 이전 보고·항목별 상태·메모 JSON. 업로드 계정 또는 관리자만 조회 |
+| `/reports/instructions` | dots의 최신 수집·HTML·업로드 지침. 업로드 계정 또는 관리자만 조회 |
 | `/reports/upload` | HTML 파일 선택 → 미리보기 → 등록 |
 | `/reports/login/publisher` | dots의 업로드 전용 로그인 |
 | `/reports/login/admin` | 관리자 아이디·비밀번호 로그인 |
@@ -64,7 +68,9 @@ dots 반복 수집·발행 예약은 아직 별도 연결이 필요하다.
 ## 파일과 표시
 
 - UTF-8 완성 HTML, 최대 2MB, `.html` 또는 `.htm`. 날짜·제목·요약은 업로드 화면에 별도로 입력한다.
-- [Design.md](../Design.md)의 스타일을 문서에 포함한다. JavaScript·폼·자동 이동·추적 코드를 넣지 않는다.
+- [Design.md](../Design.md)의 스타일을 문서에 포함한다. 실행 JavaScript·폼·자동 이동·추적 코드를 넣지 않는다.
+- `script[type=application/json]#gammaru-opportunities`에 Design.md 형식의 진행 항목을 포함한다.
+  비실행 데이터이며, 서버가 검증·파싱한다. 실행 코드를 허용하는 기능이 아니다.
 - 근거 링크는 공식 HTTPS 원문이며 새 탭에서 연다.
 - 과거 HTML도 등록할 수 있다. 과거 보고서에는 DM을 보내지 않는다.
 - 동일 날짜의 같은 파일·제목·요약은 중복 등록하지 않는다. 다른 내용은 덮어쓰지 않고 충돌을 알린다.
@@ -72,6 +78,24 @@ dots 반복 수집·발행 예약은 아직 별도 연결이 필요하다.
 원본은 Private Blob에 저장한다. 서버가 권한을 확인한 뒤 iframe sandbox와 CSP로 표시한다.
 업로드된 스크립트·폼 실행은 차단하며 직접 HTML URL에도 같은 보호를 적용한다.
 이는 사실 검증을 대신하지 않는다. 조사자가 공식 공고를 확인해야 한다.
+
+## 상태가 다음 조사로 이어지는 흐름
+
+1. dots가 `/reports/research-state`에서 `stateVersion`과 기존 항목의 ID·원문·상태·메모를 읽는다.
+2. 신규 정보와 검토 전·보류·진행 중인 항목을 조사하고 HTML 본문과 JSON 데이터를 함께 작성한다.
+3. 미리보기·발행 시 데이터를 검증하고 보고서와 항목을 하나의 조건부 쓰기로 등록한다.
+4. 보고서 상단의 **진행 관리**에서 관리자와 승인된 구독자 모두 상태와 메모를 저장한다.
+5. 다음 조사에서 이 기록을 읽는다. 완료·안함은 중요 변화가 있을 때만 다시 보고할 수 있다.
+
+상태: `new` 검토 전, `deferred` 보류, `in_progress` 진행 중, `completed` 진행 완료,
+`dismissed` 안함. 메모는 최대 1,000자이며 마지막 30회 변경 기록을 저장한다.
+보고 날짜와 별개인 항목 ID로 연결하며 새 보고서는 상태·메모를 덮어쓰지 않는다.
+다른 창이 먼저 바꾼 상태는 revision 검사로, 조사 후 변경된 상태는 stateVersion 검사로 감지한다.
+충돌 시 409로 중단하고 재검토를 요청한다. 회원·세션·토큰·변경자의 계정 식별자는 조사 JSON에 포함하지 않는다.
+
+JSON이 없는 기존 HTML은 그대로 열람할 수 있다. 기존 호의 항목은 관리자만
+`POST /reports/YYYY-MM-DD/opportunities`에 `manifest` 폼 필드로 한 번 연결할 수 있다.
+HTML 원문·해시·발행일·알림 상태는 유지한다. 매일 새 HTML을 업로드하는 데는 재배포가 필요 없다.
 
 ## 저장과 알림
 
