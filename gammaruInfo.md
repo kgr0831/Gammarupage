@@ -166,7 +166,8 @@
 | 공식 Instagram | [@ssu_gammaru](https://www.instagram.com/ssu_gammaru) |
 | 공식 YouTube | [@gammaru9553](https://www.youtube.com/@gammaru9553) |
 | 기존 공개 게임 아카이브 | [gammaruforever.github.io](https://gammaruforever.github.io/) |
-| 랜딩 페이지 배포 주소 | [GAMMARU Landing](https://kgr0831.github.io/Gammarupage/) — README에 안내된 주소 |
+| 현재 랜딩·보고서 사이트 | [GAMMARU](https://gammarupage.vercel.app/) — 운영자가 지정한 현재 Vercel 배포 주소 |
+| 과거 배포 안내 주소 | [GitHub Pages](https://kgr0831.github.io/Gammarupage/) — 기존 README에 안내된 주소. 현재 보고서 발행 대상이 아니다. |
 | 공식 GitHub 채널 | 연결 예정. 소셜 데이터의 `pending` 값이 `true`이고 주소는 GitHub 일반 홈이므로, 공식 계정 주소로 사용할 수 없다. |
 | 겨울공모전 출품작 영상 | [YouTube 영상](https://youtu.be/53zumMf-5As) |
 | 2025 게임잼 출품작 영상 | [YouTube 영상](https://youtu.be/4CrZ-eK8K1c) |
