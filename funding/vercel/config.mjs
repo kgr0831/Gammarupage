@@ -6,6 +6,8 @@ export function briefConfig(request, env = process.env) {
   if (origin && (origin.pathname !== "/" || origin.username || origin.password || origin.search || origin.hash || (origin.protocol !== "https:" && !local))) throw new Error("Invalid REPORTS_SITE_URL");
   const token = env.FUNDING_ADMIN_TOKEN || "";
   const publisherToken = env.FUNDING_PUBLISHER_TOKEN || "";
+  const personalOwnerId = (env.REPORTS_PERSONAL_OWNER_ID || "").trim();
+  if (personalOwnerId && !/^\d{17,20}$/.test(personalOwnerId)) throw new Error("Invalid REPORTS_PERSONAL_OWNER_ID");
   return {
     origin: origin?.origin || "", configured: !!origin && token.length >= 8,
     secure: origin?.protocol === "https:", token,
@@ -17,7 +19,8 @@ export function briefConfig(request, env = process.env) {
     discordBotToken: env.DISCORD_BOT_TOKEN || "",
     discordDeliveryMode: env.DISCORD_DELIVERY_MODE || "direct",
     discordWorkerToken: env.DISCORD_WORKER_TOKEN || "",
-    discordReportChannelId: (env.DISCORD_REPORT_CHANNEL_ID || "").trim(),
+    personalOwnerId,
+    discordReportChannelId: personalOwnerId ? "" : (env.DISCORD_REPORT_CHANNEL_ID || "").trim(),
     dmEnabled: env.DISCORD_DM_ENABLED === "true",
   };
 }

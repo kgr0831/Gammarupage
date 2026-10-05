@@ -4,6 +4,16 @@
 최초 기능 배포 후에는 HTML을 업로드하면 개별 URL과 누적 목록이 갱신된다.
 매일 사이트를 재배포하거나 랜딩을 별도 VPS로 이전할 필요가 없다.
 
+## 현재 운영: 개인 보고서
+
+2026-10-06부터 개발·AI·IT 공모전·채용, 미국 주식·ETF 정보로 전환한다.
+`REPORTS_PERSONAL_OWNER_ID`에 기존 승인된 본인 Discord ID를 설정하고 `DISCORD_DM_ENABLED=true`로 둔다.
+개인 모드는 예전 채널 설정이 남아 있어도 채널 게시를 비활성화하며, 승인·DM 동의한 소유자에게만 새 개인 보고서를 보낸다.
+다른 구독자의 기존 승인·세션으로는 보고서, 원본 HTML, 진행 상태에 접근할 수 없다. 관리자와 업로드 계정의 역할은 유지한다.
+기존 보고서는 보존하고 동아리 항목은 개인 추천에서 제외한다. 새 보고서는 manifest의 `audience=personal`과 `category=contest|trading|job`이 필요하다.
+개인 조건과 조사 기준은 [개인 조사 프로필](personal-brief-profile.md), 실행 순서는 [dots 지침](dots-daily-brief.md)을 따른다.
+Dishost 파일은 다시 올릴 필요가 없다. dots에는 기존 작업·예약을 개인용 지침으로 수정하도록 전달한다.
+
 ## 경로
 
 | 경로 | 용도 |

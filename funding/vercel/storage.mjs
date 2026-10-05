@@ -81,7 +81,10 @@ export class BriefStore {
     check(draft.owner === owner && draft.expires > Date.now(), "이 로그인에서 만든 미리보기가 아니거나 만료되었습니다.", 403);
     return draft;
   }
-  async publish(draft, today, channelId = "") {
+  async publish(draft, today, channelId = "", personalOwnerId = "") {
+    const manifest = manifestFromHtml(draft.html);
+    check(!personalOwnerId || manifest?.audience === "personal", "최신 개인 보고서 지침에 맞게 audience: personal과 분야 정보를 넣어 다시 미리보기해 주세요.", 409);
+    if (personalOwnerId) channelId = "";
     const htmlPath = `gammaru/briefs/html/${draft.date}/${draft.hash}.html`;
     // Immutable content first; only a committed index entry makes it visible or queues notifications.
     try { await this.files.write(htmlPath, draft.html); }
@@ -92,13 +95,13 @@ export class BriefStore {
         check(existing.hash === draft.hash && existing.title === draft.title && existing.summary === draft.summary, "해당 날짜에 다른 보고서가 이미 있습니다. 기존 파일은 덮어쓰지 않았습니다.", 409);
         return { report: existing, duplicate: true };
       }
-      const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: new Date().toISOString() };
-      registerOpportunities(state, report, manifestFromHtml(draft.html));
+      const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: new Date().toISOString(), ...(personalOwnerId ? { audience: "personal" } : {}) };
+      registerOpportunities(state, report, manifest);
       state.reports.push(report);
       if (draft.date === today && draft.notify) {
         if (channelId) queueChannel(state, draft.date, channelId);
         else for (const member of Object.values(state.members)) {
-          if (member.status === "approved" && member.dm_opt_in) state.deliveries[`${draft.date}:${member.id}`] = { date: draft.date, memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
+          if (member.status === "approved" && member.dm_opt_in && (!personalOwnerId || member.id === personalOwnerId)) state.deliveries[`${draft.date}:${member.id}`] = { date: draft.date, memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
         }
       }
       return { report, duplicate: false };

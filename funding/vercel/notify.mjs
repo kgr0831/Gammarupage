@@ -1,5 +1,6 @@
 import { digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
+import { reportChannel, allowedMember, reportRecipient } from "./access.mjs";
 
 function briefText(value, limit) {
   const chars = Array.from(value.trim().replace(/\s+/g, " "));
@@ -9,11 +10,13 @@ function briefText(value, limit) {
 
 export function formatBriefMessage(report, origin) {
   const title = briefText(report.title, 150);
-  const summary = briefText(report.summary || "", 300) || "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.";
-  return `📰 겜마루 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}/reports/${report.date}`;
+  const personal = report.audience === "personal";
+  const summary = briefText(report.summary || "", 300) || (personal ? "오늘의 공모전·미국 주식·ETF·채용 정보를 확인하세요." : "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.");
+  return `📰 ${personal ? "개인" : "겜마루"} 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}/reports/${report.date}`;
 }
 
-export function formatMemberNotice(field, origin) {
+export function formatMemberNotice(field, origin, personal = false) {
+  if (personal) return `개인 보고서 ${field === "approval_notice" ? "이용이 승인" : "로그인이 완료"}되었습니다.\n보고서: ${origin}/reports\nDM 수신 설정: ${origin}/reports/account`;
   return field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${origin}/reports\n구독·알림 설정: ${origin}/reports/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${origin}/reports/account`;
 }
 
@@ -31,6 +34,7 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
   if (!config.discordBotToken) return;
   const claimed = await store.update((state) => {
     const member = state.members[memberId], notice = member?.[field];
+    if (!allowedMember(member, config)) return false;
     if (notice?.id !== noticeId || notice.status !== "pending") return false;
     if (field === "approval_notice" && member.status !== "approved") { notice.status = "cancelled"; return false; }
     notice.status = "sending"; return true;
@@ -57,10 +61,10 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
     const channel = await opened.json();
     if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); return; }
     const current = (await store.read()).members[memberId];
-    if (current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
+    if (!allowedMember(current, config) || current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
     messageStarted = true;
     const sent = await api(`/channels/${channel.id}/messages`, {
-      content: formatMemberNotice(field, config.origin),
+      content: formatMemberNotice(field, config.origin, !!config.personalOwnerId),
       flags: 4, allowed_mentions: { parse: [] }, nonce: digest(noticeId).slice(0, 25), enforce_nonce: true,
     });
     if (!sent.ok) { await failed(sent); return; }
@@ -70,9 +74,9 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
 }
 
 export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs = 45000) {
-  const channelId = config.discordReportChannelId || "";
+  const channelId = reportChannel(config);
   if (!config.discordBotToken || (channelId ? !/^\d{17,20}$/.test(channelId) : !config.dmEnabled)) return;
-  const eligible = (row, state) => channelId ? row.channelId === channelId : !row.channelId && state.members[row.memberId]?.status === "approved" && state.members[row.memberId]?.dm_opt_in;
+  const eligible = (row, state) => (!config.personalOwnerId || state.reports.find((r) => r.date === row.date)?.audience === "personal") && (channelId ? row.channelId === channelId : !row.channelId && reportRecipient(state.members[row.memberId], config));
   const end = Date.now() + budgetMs;
   const api = (path, body) => fetcher(`https://discord.com/api/v10${path}`, {
     method: body === undefined ? "GET" : "POST", signal: AbortSignal.timeout(10000), redirect: "error",

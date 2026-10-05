@@ -154,6 +154,7 @@ try {
   assert.equal(memberFeedback.known[0].note, "행사 예산 확정 후 재검토");
   await admin.goto(`${app.config.origin}/reports/progress`);
   await admin.locator('.status-filters a[href$="status=in_progress"]').click();
+  await admin.locator('.full-report > summary').click();
   await admin.getByRole("heading", { name: opportunity.title }).waitFor();
   await admin.locator('.status-filters a[href$="status=completed"]').click();
   assert.equal(await admin.locator(".opportunity-row").count(), 0);
@@ -167,5 +168,22 @@ try {
   assert.equal(await noScript.getByRole("button", { name: "완료", exact: true }).isDisabled(), true);
   assert.equal((await app.store.read()).opportunities[opportunity.id].note, "행사 예산 확정 후 재검토");
   await noScriptContext.close();
+  app.config.personalOwnerId = user;
+  const personalItems = ["contest", "trading", "job"].map((category) => ({ ...opportunity, id: `browser-${category}`, category, title: { contest: "AI 개발 공모전 · 검증용", trading: "미국 경제 발표 관찰 · 검증용", job: "AI 개발 채용 · 검증용" }[category], sourceUrl: `https://example.org/${category}` }));
+  await app.store.update((s) => {
+    s.reports[0].audience = "personal"; s.reports[0].opportunities = personalItems;
+    for (const item of personalItems) s.opportunities[item.id] = { ...item, status: "new", note: "", revision: 0, lastReported: today, history: [] };
+  });
+  await member.goto(`${app.config.origin}/reports/${today}`);
+  for (const category of ["contest", "trading", "job"]) assert.equal(await member.locator(`#category-${category} .opportunity-row`).count(), 1);
+  await member.locator("#category-trading").getByRole("button", { name: "보류", exact: true }).click();
+  await member.waitForURL(`**/reports/${today}?progress=browser-trading*`);
+  assert.equal((await app.store.read()).opportunities["browser-trading"].status, "deferred");
+  for (const width of [1440, 390, 320]) {
+    await member.setViewportSize({ width, height: 1000 });
+    await member.evaluate(() => scrollTo(0, 0));
+    assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await member.screenshot({ path: path.join(output, `personal-${width}.png`), fullPage: true });
+  }
   console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM, channel UI, saved admin/subscriber progress and next-research feedback. Mock private storage only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

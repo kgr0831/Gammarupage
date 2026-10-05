@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 import { formatBriefMessage, formatMemberNotice } from "./notify.mjs";
+import { reportChannel, allowedMember, reportRecipient } from "./access.mjs";
 
 const leaseMs = 5 * 60 * 1000;
 const fields = ["login_notice", "approval_notice"];
@@ -18,10 +19,11 @@ function* rows(state) {
 }
 function eligible(entry, state, config, now) {
   const { row, member, field } = entry;
-  if (member) return (field !== "approval_notice" || member.status === "approved") && row.createdAt > now - 86400000;
+  if (member) return allowedMember(member, config) && (field !== "approval_notice" || member.status === "approved") && row.createdAt > now - 86400000;
   if (row.date !== seoulClock(new Date(now)).date || !state.reports.some((report) => report.date === row.date)) return false;
-  const channelId = config.discordReportChannelId;
-  return channelId ? row.channelId === channelId : !row.channelId && config.dmEnabled && state.members[row.memberId]?.status === "approved" && state.members[row.memberId]?.dm_opt_in;
+  if (config.personalOwnerId && state.reports.find((report) => report.date === row.date)?.audience !== "personal") return false;
+  const channelId = reportChannel(config);
+  return channelId ? row.channelId === channelId : !row.channelId && config.dmEnabled && reportRecipient(state.members[row.memberId], config);
 }
 function cleanLease(row) {
   for (const key of ["workerLeaseHash", "workerPhase", "workerExpiresAt"]) delete row[key];
@@ -57,7 +59,7 @@ export async function claimWorkerJob(store, config, now = Date.now()) {
       id: entry.id, lease, expiresAt: row.workerExpiresAt,
       target: row.channelId ? { channelId: row.channelId } : { memberId: member?.id || row.memberId },
       message: {
-        content: member ? formatMemberNotice(field, config.origin) : formatBriefMessage(report, config.origin),
+        content: member ? formatMemberNotice(field, config.origin, !!config.personalOwnerId) : formatBriefMessage(report, config.origin),
         flags: 4, allowed_mentions: { parse: [] }, enforce_nonce: true,
         nonce: digest(member ? row.id : entry.id.slice("report/".length)).slice(0, 25),
       },

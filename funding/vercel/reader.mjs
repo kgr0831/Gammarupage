@@ -126,6 +126,7 @@ body.report-reader { background:var(--navy); color:#f4f0e8; font-size:16px; }
 .opportunity-row p { font-size:16px; line-height:1.65; margin:0; word-break:keep-all; overflow-wrap:anywhere; }
 .glance-benefit { color:#d9d5df; }
 .field-label { display:block; font-size:13px; color:var(--lime); margin-bottom:6px; }
+.category-section { margin:28px 0 36px; scroll-margin-top:24px; }
 .quick-status { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin:0; }
 .quick-status button { background:#161524; border:1px solid #63586f; color:#f4f0e8; min-height:38px; padding:7px 8px; font-size:14px; font-weight:600; line-height:1.4; }
 .quick-status button:hover { border-color:var(--pink); background:#29182b; }
