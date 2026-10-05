@@ -78,15 +78,17 @@ export function registerOpportunities(state, report, manifest) {
 export function changeProgress(state, id, input, actor) {
   const item = state.opportunities[id];
   check(item && Object.hasOwn(state.opportunities, id), "진행 항목을 찾을 수 없습니다.", 404);
-  check(Object.hasOwn(progressLabels, input.status), "유효한 진행 상태를 선택해 주세요.");
+  const status = input.status ?? item.status;
+  check(Object.hasOwn(progressLabels, status), "유효한 진행 상태를 선택해 주세요.");
   check(Number.isSafeInteger(input.revision) && input.revision === item.revision, "다른 창에서 상태가 변경되었습니다. 새로고침 후 다시 저장해 주세요.", 409);
-  check(typeof input.note === "string" && input.note.length <= 1000 && !/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(input.note), "메모는 1,000자까지 입력할 수 있습니다.");
-  const note = input.note.trim();
-  if (item.status === input.status && item.note === note) return;
+  const value = input.note ?? item.note;
+  check(typeof value === "string" && value.length <= 1000 && !/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value), "메모는 1,000자까지 입력할 수 있습니다.");
+  const note = value.trim();
+  if (item.status === status && item.note === note) return;
   const at = new Date().toISOString();
-  item.history.push({ from: item.status, to: input.status, note, at, actor });
+  item.history.push({ from: item.status, to: status, note, at, actor });
   item.history = item.history.slice(-30);
-  Object.assign(item, { status: input.status, note, revision: item.revision + 1, updatedAt: at });
+  Object.assign(item, { status, note, revision: item.revision + 1, updatedAt: at });
   state.workflowVersion++;
 }
 export function researchState(state) {

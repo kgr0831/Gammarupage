@@ -233,7 +233,8 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         check(!date || data.reports.some((report) => report.date === date && report.opportunities?.some((item) => item.id === progressMatch[1])), "해당 보고서의 진행 항목이 아닙니다.");
         const revision = textField(form, "revision");
         check(/^\d+$/.test(revision), "진행 기록 버전을 확인해 주세요.");
-        await store.setProgress(progressMatch[1], { status: textField(form, "status"), note: textField(form, "note"), revision: Number(revision) }, session.subject, admin ? null : member.id);
+        check(form.has("status") || form.has("note"), "변경할 상태나 메모가 필요합니다.");
+        await store.setProgress(progressMatch[1], { status: form.has("status") ? textField(form, "status") : undefined, note: form.has("note") ? textField(form, "note") : undefined, revision: Number(revision) }, session.subject, admin ? null : member.id);
         return redirect(date ? `/reports/${date}?progress=${progressMatch[1]}#progress-${progressMatch[1]}` : `/reports/progress#progress-${progressMatch[1]}`);
       }
       const attachMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})\/opportunities$/);
@@ -251,7 +252,9 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         const html = await store.html(report);
         return new Response(url.searchParams.get("reading") === "1" ? readableReport(html) : html, { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `inline; filename="gammaru-${report.date}.html"` } });
       }
-      return send(view.viewer(report, session.role, data.opportunities, url.searchParams.get("progress") || ""));
+      const filter = url.searchParams.get("status") || "";
+      check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
+      return send(view.viewer(report, session.role, data.opportunities, url.searchParams.get("progress") || "", filter));
     } catch (error) {
       return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports">보고서 목록</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a></section>`), error.status || 503);
     }

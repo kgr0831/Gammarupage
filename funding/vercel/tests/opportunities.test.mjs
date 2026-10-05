@@ -25,7 +25,10 @@ test("HTML metadata creates a shared persistent item; user progress survives sub
   assert.equal(state.opportunities[item().id].history.length, 1);
   assert.equal(state.reports[0].opportunities[0].nextAction, item().nextAction, "Historic report metadata stays intact");
   const admin = await app.session("admin");
-  assert.match(await (await app.request("/reports/2026-10-01?progress=1", admin)).text(), /행사 예산 확정 후 검토/);
+  const historic = await (await app.request("/reports/2026-10-01?progress=1", admin)).text();
+  assert.match(historic, /행사 예산 확정 후 검토/);
+  assert.ok(historic.includes(item().nextAction), "Overview retains the facts from that report date");
+  assert.doesNotMatch(historic, /확정된 예산을 확인하세요/);
 });
 
 test("completed and dismissed items need a reported change to return, without resetting the user's decision", async () => {
@@ -72,12 +75,35 @@ test("approved subscribers and admins can change shared progress; publishers and
   assert.equal((await response.json()).known[0].status, "in_progress");
   const viewer = await (await app.request("/reports/2026-10-01", member)).text();
   assert.match(viewer, /&lt;img src=x/); assert.doesNotMatch(viewer, /<img src=x/);
-  assert.match(viewer, /<select name="status"/);
+  assert.match(viewer, /name="status" value="deferred"/);
+  assert.doesNotMatch(viewer, /<select name="status"/);
   assert.equal((await app.request(pathname, admin, { ...form, status: "deferred", revision: "1" })).status, 303);
   await app.store.update((state) => { state.members["100000000000000001"].status = "revoked"; });
   assert.equal((await app.request(pathname, member, { ...form, revision: "2" })).status, 403);
   await assert.rejects(app.store.setProgress(item().id, { status: "completed", note: "", revision: 2 }, "100000000000000001", "100000000000000001"), /구독 승인이 변경/);
   assert.equal((await app.request("/reports/progress", publisher)).status, 403);
+});
+
+test("one-click status updates preserve notes; note-only edits preserve status and still detect stale revisions", async () => {
+  const app = setup(); await publish(app, "2026-10-01", manifest());
+  const member = await app.session("member", await app.member());
+  const endpoint = `/reports/opportunities/${item().id}/status`;
+  assert.equal((await app.request(endpoint, member, { note: "예산 확정 후 검토", revision: "0" })).status, 303);
+  let saved = (await app.store.read()).opportunities[item().id];
+  assert.equal(saved.status, "new");
+  assert.equal((await app.request(endpoint, member, { status: "deferred", revision: "1" })).status, 303);
+  saved = (await app.store.read()).opportunities[item().id];
+  assert.equal(saved.status, "deferred");
+  assert.equal(saved.note, "예산 확정 후 검토");
+  assert.equal((await app.request(endpoint, member, { note: "오래된 메모", revision: "1" })).status, 409);
+  assert.equal((await app.request(endpoint, member, { revision: "2" })).status, 400);
+  assert.equal((await app.request(endpoint, member, { note: "", revision: "2" })).status, 303);
+  saved = (await app.store.read()).opportunities[item().id];
+  assert.equal(saved.status, "deferred");
+  assert.equal(saved.note, "");
+  const filtered = await (await app.request("/reports/2026-10-01?status=completed", member)).text();
+  assert.doesNotMatch(filtered, /class="opportunity-row"/);
+  assert.equal((await app.request("/reports/2026-10-01?status=invalid", member)).status, 400);
 });
 
 test("malformed or hostile metadata fails staging, while duplicate source identities cannot become new items", async () => {

@@ -1,6 +1,6 @@
 import { layout, hero, esc, hidden, profile, formButton } from "../portal/views.mjs";
 import { readerShellStyles } from "./reader.mjs";
-import { progressLabels } from "./opportunities.mjs";
+import { reportOverview, progressOverview } from "./progress-views.mjs";
 export function page(title, content, role = "guest") {
   const nav = role === "admin" ? '<a href="/reports">보고서 목록</a><a href="/reports/progress">진행 관리</a><a href="/reports/upload">HTML 업로드</a><a href="/reports/admin">구독 승인</a>' : role === "publisher" ? '<a href="/reports/upload">HTML 업로드</a>' : '<a href="/reports">보고서 목록</a><a href="/reports/progress">진행 현황</a><a href="/reports/account">구독 설정</a>';
   return layout(title, content, role, nav).replace('action="/members/logout"', 'action="/reports/logout"').replace("</head>", "<style>.topbar nav{flex-wrap:wrap;min-width:0}</style></head>");
@@ -18,20 +18,14 @@ export function archive(reports, role, search, currentPage) {
   const pageUrl = (n) => `/reports?${new URLSearchParams({ q: search, page: String(n) })}`;
   return page("보고서 보관함", `${hero('DAILY <span>ARCHIVE.</span>', "오늘의 기회부터 지난 기록까지. 겜마루에 도착한 정보를 한곳에서 확인하세요.")}<form method="get" action="/reports" class="panel"><label>보고서 검색<input type="search" name="q" value="${esc(search)}" placeholder="날짜, 제목 또는 요약" maxlength="100"></label><button class="button secondary small">검색</button></form><div class="section-heading"><h2>누적 보고서 ${all.length}개</h2><small>LATEST FIRST / ${number} OF ${count}</small></div>${visible.map((r) => `<a class="archive-row" href="/reports/${r.date}"><div><span class="meta">${r.date}</span><h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p></div><span class="tag accent">HTML 보고서 열기 ↗</span></a>`).join("") || '<p class="empty">등록된 보고서가 없습니다.</p>'}<div class="row">${number > 1 ? `<a class="button secondary" href="${esc(pageUrl(number - 1))}">이전 목록</a>` : ""}${number < count ? `<a class="button secondary" href="${esc(pageUrl(number + 1))}">다음 목록</a>` : ""}</div>`, role);
 }
-export function viewer(report, role, opportunities = {}, focused = "") {
-  const items = (report.opportunities || []).map((item) => ({ ...item, ...opportunities[item.id] }));
-  const progress = items.length ? `<details class="report-progress" id="report-progress" ${focused ? "open" : ""}><summary>진행 관리 · ${items.length}건 <span>보류 ${items.filter((item) => item.status === "deferred").length} · 진행 중 ${items.filter((item) => item.status === "in_progress").length}</span></summary><div class="progress-content"><p class="progress-help">동아리의 현재 진행 기록입니다. 승인된 구독자 모두가 상태와 메모를 저장할 수 있으며, 다음 조사에 반영됩니다. 진행 상태 변경은 외부 신청·발송 승인이 아닙니다.</p>${progressCards(items, role, report.date)}</div></details>` : `<div class="reader-empty">이 보고서에는 진행 항목이 아직 연결되지 않았습니다. <a href="/reports/progress">전체 진행 현황</a></div>`;
-  const content = `<header class="reader-toolbar"><nav aria-label="보고서 읽기"><a href="/reports">← 전체 보고서 목록</a><a href="/reports/${report.date}/html?reading=1" target="_blank" rel="noopener noreferrer">본문만 열기 ↗</a><a href="/reports/${report.date}/html" target="_blank" rel="noopener noreferrer">원본 보기 ↗</a><time datetime="${report.date}">${report.date}</time></nav><h1>${esc(report.title)}</h1></header>${progress}<iframe class="reader-frame" title="${esc(report.title)}" src="/reports/${report.date}/html?reading=1" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>`;
-  return page(report.title, content, role).replace("</head>", `<style>${readerShellStyles}</style></head>`).replace("<body>", '<body class="report-reader">');
+function readingPage(title, content, role) {
+  return page(title, content, role).replace("</head>", '<style>' + readerShellStyles + '</style></head>').replace("<body>", '<body class="report-reader">');
 }
-function progressCards(items, role, date = "") {
-  return items.map((item) => `<article class="progress-card" id="progress-${esc(item.id)}"><div class="progress-heading"><h2>${esc(item.title)}</h2><span class="progress-status">${esc(progressLabels[item.status])}</span></div><p>${esc(item.benefit)}</p><p><strong>다음 행동</strong> ${esc(item.nextAction)}</p><p><a href="${esc(item.sourceUrl)}" target="_blank" rel="noopener noreferrer">공식 원문 ↗</a> · 최근 보고 ${esc(item.lastReported)}</p>${["admin", "member"].includes(role) ? `<form method="post" action="/reports/opportunities/${esc(item.id)}/status">${hidden("revision", item.revision)}${hidden("date", date)}<label>진행 상태<select name="status" aria-label="진행 상태">${Object.entries(progressLabels).map(([value, label]) => `<option value="${value}" ${value === item.status ? "selected" : ""}>${label}</option>`).join("")}</select></label><label>다음 조사에 반영할 메모<textarea name="note" maxlength="1000" rows="3" placeholder="보류 이유, 확인할 조건, 이미 진행한 내용을 적어 주세요.">${esc(item.note)}</textarea></label><button class="button small">상태·메모 저장</button></form>` : `<p class="progress-note"><strong>진행 메모</strong><br>${esc(item.note || "등록된 메모가 없습니다.")}</p>`}${item.updatedAt ? `<p class="progress-updated">최근 저장 ${esc(new Date(item.updatedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }))} KST</p>` : ""}</article>`).join("");
+export function viewer(report, role, opportunities = {}, focused = "", filter = "") {
+  return readingPage(report.title, reportOverview(report, role, opportunities, focused, filter), role);
 }
 export function progressPage(opportunities, role, filter = "") {
-  const all = Object.values(opportunities).sort((a, b) => b.lastReported.localeCompare(a.lastReported));
-  const items = all.filter((item) => !filter || item.status === filter);
-  const content = `<section class="section-heading"><h1 style="font-size:32px">후원·지원 정보 진행 현황</h1></section><p>보고 날짜가 달라도 같은 항목의 상태와 메모는 함께 유지됩니다. 승인된 구독자 모두가 함께 수정하는 기록입니다. 보류 이유와 다음에 확인할 점을 메모로 남겨 주세요.</p><form method="get" class="row"><label>상태별 보기<select name="status" aria-label="상태별 보기"><option value="">전체 ${all.length}건</option>${Object.entries(progressLabels).map(([value, label]) => `<option value="${value}" ${value === filter ? "selected" : ""}>${label}</option>`).join("")}</select></label><button class="button secondary small">보기</button></form>${progressCards(items, role) || '<p class="empty">해당 상태의 진행 항목이 없습니다.</p>'}`;
-  return page("진행 현황", content, role).replace("</head>", `<style>${readerShellStyles}</style></head>`);
+  return readingPage("진행 현황", progressOverview(opportunities, role, filter), role);
 }
 export function upload(today, role, published, deliveries, enabled, channelId = "") {
   const target = channelId ? "채널" : "DM";
