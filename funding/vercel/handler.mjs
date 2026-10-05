@@ -182,7 +182,12 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (personalAccountMode && ["/reports/account", "/reports/subscription", "/reports/unsubscribe", "/reports/account/confirmation"].includes(pathname)) {
         if (!admin && request.method === "GET") return redirect("/reports/login/admin");
         check(admin, "개인 계정으로 먼저 로그인해 주세요.", 403);
-        if (pathname === "/reports/account" && request.method === "GET") return send(view.personalAccount(linkedMember, data.personalAccount?.revision || 0, oauthConfigured, url.searchParams, config.discordApplicationId));
+        if (pathname === "/reports/account" && request.method === "GET") {
+          // Browsers enforce form-action on the POST's redirect to Discord too.
+          // Only this account page needs an external form navigation destination.
+          headers.set("Content-Security-Policy", security["Content-Security-Policy"].replace("form-action 'self';", "form-action 'self' https://discord.com;"));
+          return send(view.personalAccount(linkedMember, data.personalAccount?.revision || 0, oauthConfigured, url.searchParams, config.discordApplicationId));
+        }
         check(request.method === "POST" && pathname !== "/reports/account", "요청을 확인해 주세요.", 405);
         const form = await formData(request), revision = Number(textField(form, "revision"));
         check(/^\d+$/.test(textField(form, "revision")), "연결 버전을 확인해 주세요.");

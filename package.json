@@ -20,7 +20,7 @@
     "reports:dev": "node --env-file-if-exists=.env.funding node_modules/next/dist/bin/next dev",
     "personal:dev": "node --env-file=.env.personal funding/personal-local.mjs",
     "reports:test": "node --test funding/vercel/tests/*.test.mjs",
-    "reports:test:browser": "node funding/vercel/tests/browser.mjs",
+    "reports:test:browser": "node funding/vercel/tests/browser.mjs && node funding/vercel/tests/oauth-browser.mjs",
     "typecheck": "tsc --noEmit",
     "test:smoke": "node scripts/smoke.mjs",
     "test:reel": "node scripts/test-hero-reel.mjs",

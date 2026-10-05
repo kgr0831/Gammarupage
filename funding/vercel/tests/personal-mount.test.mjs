@@ -117,3 +117,15 @@ test("missing personal credentials fail closed even when the club is configured"
   assert.equal((await app.request("/personal")).status, 503);
   assert.equal((await app.request("/reports")).status, 200);
 });
+
+test("only the personal account page permits OAuth form redirects to Discord", async () => {
+  const app = mountedFixture(), own = await app.login(true), club = await app.login(false);
+  const policy = response => response.headers.get("content-security-policy").match(/(?:^|; )form-action ([^;]+)/)[1];
+  assert.equal(policy(await app.request("/personal/account", own)), "'self' https://discord.com");
+  for (const path of ["/personal", "/personal/login/admin", "/personal/profile", "/personal/upload"]) assert.equal(policy(await app.request(path, own)), "'self'");
+  assert.equal(policy(await app.request("/reports/account", club)), "'self'");
+  const cookie = own.split("=")[1];
+  const raw = "<html><body>Private raw HTML</body></html>";
+  const draft = await app.personalStore.stage({ date: today, title: "Policy fixture", summary: "", html: raw }, digest(cookie), today);
+  assert.equal(policy(await app.request(`/personal/upload/preview/${draft.id}/html`, own)), "'none'");
+});
