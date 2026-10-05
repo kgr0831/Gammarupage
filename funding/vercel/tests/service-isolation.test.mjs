@@ -50,7 +50,7 @@ test("each service serves its own complete guide and personal guide uses its own
   const clubCookie = await club.session("publisher"), personalCookie = await personal.session("publisher");
   const clubGuide = await (await club.request("/reports/upload?guide=1", clubCookie)).text();
   const personalGuide = await (await personal.request("/reports/upload?guide=1", personalCookie)).text();
-  assert.match(clubGuide, /동아리의 외부 후원/);
+  assert.match(clubGuide, /동아리가 직접 확보할 운영비/);
   assert.match(clubGuide, /문서 버전: 3/);
   assert.doesNotMatch(clubGuide, /동아리 운영자금 조사는 종료/);
   assert.match(personalGuide, /미국 주식·ETF/);
