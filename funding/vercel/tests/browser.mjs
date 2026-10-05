@@ -30,6 +30,16 @@ try {
   await admin.getByLabel("아이디").fill("admin"); await admin.getByLabel("비밀번호").fill(app.config.token);
   await admin.getByRole("button", { name: "로그인", exact: true }).click();
   await admin.getByRole("link", { name: "HTML 업로드", exact: true }).click();
+  await admin.getByRole("link", { name: "이전 보고·진행 기록", exact: true }).click();
+  assert.match(admin.url(), /\/reports\/upload\?guide=1#research-state$/);
+  assert.equal(JSON.parse(await admin.locator("#research-state-json").innerText()).stateVersion, 0);
+  assert.match(await admin.locator("#design pre").innerText(), /gammaru-opportunities/);
+  for (const width of [1440, 390]) {
+    await admin.setViewportSize({ width, height: 900 });
+    assert.equal(await admin.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, "Research sources wrap on mobile");
+  }
+  await admin.setViewportSize({ width: 1440, height: 1080 });
+  await admin.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
   const hostile = sampleHtml.replace("</body>", '<script>parent.document.body.dataset.injected="yes";window.scriptRan=true</script><form action="/reports/logout" method="post"><button id="bad-form">bad form</button></form></body>');
   await admin.getByLabel("보고서 제목", { exact: true }).fill("겜마루 후원·운영자금 일일 보고 — 검증용");
   await admin.getByLabel("목록과 DM에 표시할 요약").fill("업로드와 보관함 화면을 확인하는 가상 보고서입니다.");

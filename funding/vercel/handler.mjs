@@ -195,7 +195,17 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (/^\/reports\/(upload(?:\/|$)|notify$|design$|context$|instructions$)/.test(pathname)) {
         if (!publisher && request.method === "GET") return redirect("/reports/login/publisher");
         check(publisher, "HTML 업로드 권한이 필요합니다.", 403);
-        if (pathname === "/reports/upload" && request.method === "GET") return send(view.upload(today, session.role, data.reports.find((r) => r.date === url.searchParams.get("published")), Object.values(data.deliveries), notificationsEnabled, channelId));
+        if (pathname === "/reports/upload" && request.method === "GET") {
+          if (url.searchParams.get("guide") === "1") {
+            const [instructions, design, context] = await Promise.all([
+              readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"),
+              readFile(path.join(process.cwd(), "Design.md"), "utf8"),
+              readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8"),
+            ]);
+            return send(view.publisherGuide({ instructions, design, context, research: researchState(data), today }, session.role));
+          }
+          return send(view.upload(today, session.role, data.reports.find((r) => r.date === url.searchParams.get("published")), Object.values(data.deliveries), notificationsEnabled, channelId));
+        }
         if (pathname === "/reports/design" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "Design.md"), "utf8"), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/context" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8"), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/instructions" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"), 200, "text/plain; charset=utf-8");

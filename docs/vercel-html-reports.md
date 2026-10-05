@@ -15,6 +15,7 @@
 | `/reports/progress` | 모든 보고서의 공유 진행 현황·메모. 관리자와 승인된 구독자 모두 변경 |
 | `/reports/research-state` | dots용 이전 보고·항목별 상태·메모 JSON. 업로드 계정 또는 관리자만 조회 |
 | `/reports/instructions` | dots의 최신 수집·HTML·업로드 지침. 업로드 계정 또는 관리자만 조회 |
+| `/reports/upload?guide=1` | 클라우드 브라우저용 HTML 조사 자료. 지침·동아리 정보·Design.md·전체 진행 기록을 한 페이지에서 조회. 업로드 계정 또는 관리자 전용 |
 | `/reports/upload` | HTML 파일 선택 → 미리보기 → 등록 |
 | `/reports/login/publisher` | dots의 업로드 전용 로그인 |
 | `/reports/login/admin` | 관리자 아이디·비밀번호 로그인 |

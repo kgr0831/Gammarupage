@@ -19,6 +19,12 @@
 업로드 로그인 세션은 최대 30일이다. 만료나 추가 인증이 필요하면 사용자가 비공개 로그인 흐름에서 다시 로그인한다.
 클라우드 실행은 개인 PC가 꺼져 있어도 가능하지만, 무기한 무인 로그인을 보장하지 않는다.
 
+### 브라우저에서 조사 자료 읽기
+
+로그인 후 `https://gammarupage.vercel.app/reports/upload?guide=1`을 열면 작업 지침·동아리 정보·Design.md·진행 기록을 **하나의 HTML 페이지**에서 읽을 수 있다. 업로드 화면의 자료 링크들도 이 페이지로 연결된다.
+텍스트·JSON 주소에서 `ERR_BLOCKED_BY_CLIENT`가 나면 이 HTML 보기를 사용한다. 기존 주소의 접근 권한을 해제하거나 로그인 키를 URL에 넣지 않는다.
+`#research-state`의 `research-state-json` 영역은 `/reports/research-state`와 같은 전체 JSON이다. 최신 `stateVersion`, `known`, 메모, 이전 보고서 목록을 여기서 확인할 수 있다. 조사 시작 시와 발행 직전에 페이지를 새로고침한다.
+
 ## dot에게 줄 지시문
 
 ```text
@@ -33,6 +39,11 @@
 
 사이트: https://gammarupage.vercel.app
 업로드: https://gammarupage.vercel.app/reports/upload
+브라우저용 전체 조사 자료: https://gammarupage.vercel.app/reports/upload?guide=1
+
+아래의 /reports/instructions, /reports/context, /reports/design, /reports/research-state를 브라우저에서 읽지 못하면
+브라우저용 전체 조사 자료 페이지의 해당 섹션을 읽어줘. 진행 기록은 research-state-json 영역의 전체 JSON을 사용하고,
+발행 직전 최신 기록을 확인할 때에도 그 페이지를 새로고침해줘. HTML 보기에도 접근할 수 없으면 작업을 멈추고 알려줘.
 
 1. 한국시간 오늘 날짜를 YYYY-MM-DD로 확인해줘.
    /reports/upload?published=YYYY-MM-DD 에서 해당 날짜의 등록 완료 표시가 있는지 확인해줘.
