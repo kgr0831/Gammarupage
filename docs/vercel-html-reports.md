@@ -137,6 +137,10 @@ dot도 발행 후 대기 건수를 확인하도록 지시한다.
 Vercel Preview에는 별도 테스트 저장소·자격증명을 연결하고 `REPORTS_SITE_URL`도 해당 주소로 설정한다.
 
 이번 Vercel 경로는 **완성 HTML 업로드·보관·회원 열람·채널 요약 알림**을 담당한다.
+알림 전송만 Dishost로 분리하려면 [독립 알림 봇 안내](../discord-notifier/README.md)를 따른다.
+`DISCORD_DELIVERY_MODE=worker`에서는 Vercel이 대기 기록만 저장하며 별도 봇이 가져가 전송한다.
+`/reports/worker/status|claim|begin|finish`는 `DISCORD_WORKER_TOKEN`으로 인증하는 POST 전용이다.
+공개 페이지·구독자·업로드 계정의 로그인으로는 이 API를 호출할 수 없다. 봇에는 Blob나 관리자 키를 주지 않는다.
 dots의 조사·HTML 작성은 [예약 지침](dots-daily-brief.md)을 따른다. 이전 독립 시제품의
 Codex CLI·팩트챗 자동 대체 조사, 문서/메일 실행 승인, SQLite 데이터는 자동 이관되지 않는다.
 별도 스크럼·랜딩 CMS도 후속 범위다.

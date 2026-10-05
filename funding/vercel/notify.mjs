@@ -13,6 +13,10 @@ export function formatBriefMessage(report, origin) {
   return `📰 겜마루 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}/reports/${report.date}`;
 }
 
+export function formatMemberNotice(field, origin) {
+  return field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${origin}/reports\n구독·알림 설정: ${origin}/reports/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${origin}/reports/account`;
+}
+
 // A transactional login notice is independent of the daily newsletter switch.
 // Claim once in Blob so duplicate callbacks/workers cannot send the same notice twice.
 export async function deliverLoginNotice(store, config, memberId, noticeId, fetcher = fetch) {
@@ -56,7 +60,7 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
     if (current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
     messageStarted = true;
     const sent = await api(`/channels/${channel.id}/messages`, {
-      content: field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${config.origin}/reports\n구독·알림 설정: ${config.origin}/reports/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${config.origin}/reports/account`,
+      content: formatMemberNotice(field, config.origin),
       flags: 4, allowed_mentions: { parse: [] }, nonce: digest(noticeId).slice(0, 25), enforce_nonce: true,
     });
     if (!sent.ok) { await failed(sent); return; }

@@ -9,6 +9,7 @@ import { deliverBriefLinks, deliverLoginNotice, deliverApprovalNotice } from "./
 import * as view from "./views.mjs";
 import { readableReport } from "./reader.mjs";
 import { researchState, parseManifest, progressLabels } from "./opportunities.mjs";
+import { handleWorkerJob, notificationTransportReady, workerMode } from "./worker-jobs.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const security = {
@@ -59,19 +60,25 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       headers.append("Set-Cookie", cookie(cookieName, token, age));
     }
     const channelId = config.discordReportChannelId || "";
-    const notificationsEnabled = !!config.discordBotToken && (channelId ? /^\d{17,20}$/.test(channelId) : config.dmEnabled);
-    const scheduleNotifications = () => after(() => deliverBriefLinks(store, config, fetcher, 210000).catch(() => console.error("Report notifications require review.")));
-    const scheduleApproval = (id, noticeId) => after(() => deliverApprovalNotice(store, config, id, noticeId, fetcher).catch(() => console.error("Approval notification requires review.")));
+    const transportReady = notificationTransportReady(config);
+    const notificationsEnabled = transportReady && (channelId ? /^\d{17,20}$/.test(channelId) : config.dmEnabled);
+    const scheduleNotifications = () => { if (!workerMode(config)) after(() => deliverBriefLinks(store, config, fetcher, 210000).catch(() => console.error("Report notifications require review."))); };
+    const scheduleApproval = (id, noticeId) => { if (!workerMode(config)) after(() => deliverApprovalNotice(store, config, id, noticeId, fetcher).catch(() => console.error("Approval notification requires review."))); };
     const approvalNotice = (m, id, retry = false) => {
       const prior = m.approval_notice;
       if (retry) check(!prior || Date.now() >= Math.max(prior.createdAt + 60000, prior.retryAt || 0), "확인 DM을 요청한 지 얼마 되지 않았습니다. 잠시 후 다시 시도해 주세요.", 429);
-      m.approval_notice = { id, createdAt: Date.now(), status: config.discordBotToken ? "pending" : "unavailable" };
+      m.approval_notice = { id, createdAt: Date.now(), status: transportReady ? "pending" : "unavailable" };
     };
     try {
       check(config.configured, "보고서 저장소와 로그인 설정을 준비 중입니다.", 503);
       const url = new URL(request.url); const pathname = url.pathname.replace(/\/$/, "");
       check(url.origin === config.origin, "설정된 사이트 주소로 접속해 주세요.", 400);
       check(["GET", "POST"].includes(request.method), "허용되지 않는 요청입니다.", 405);
+      if (pathname.startsWith("/reports/worker/")) {
+        check(request.method === "POST", "POST required.", 405);
+        check((config.discordWorkerToken || "").length >= 32 && equal(request.headers.get("authorization"), `Bearer ${config.discordWorkerToken}`), "Worker authentication required.", 403);
+        return send(JSON.stringify(await handleWorkerJob(request, store, config)), 200, "application/json; charset=utf-8");
+      }
       if (request.method === "POST") check(request.headers.get("origin") === config.origin, "다른 사이트의 요청은 허용되지 않습니다.", 403);
       // Public pages check this endpoint too; guests need no Blob read.
       if (pathname === "/reports/session" && request.method === "GET" && !cookies[cookieName]) return send(JSON.stringify({ authenticated: false }), 200, "application/json; charset=utf-8");
@@ -132,11 +139,11 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           }
           // Re-login must not undo an opt-out, rejection or administrator revocation.
           if (m.login_notice?.createdAt > Date.now() - 60000) return null;
-          m.login_notice = { id: noticeId, createdAt: Date.now(), status: config.discordBotToken ? "pending" : "unavailable" };
-          return config.discordBotToken ? noticeId : null;
+          m.login_notice = { id: noticeId, createdAt: Date.now(), status: transportReady ? "pending" : "unavailable" };
+          return transportReady ? noticeId : null;
         });
         await signIn("member", user.id);
-        if (notice) after(() => deliverLoginNotice(store, config, user.id, notice, fetcher).catch(() => console.error("Login notification requires review.")));
+        if (notice && !workerMode(config)) after(() => deliverLoginNotice(store, config, user.id, notice, fetcher).catch(() => console.error("Login notification requires review.")));
         return redirect("/reports/account?welcome=1");
       }
       if (pathname === "/reports/account/confirmation" && request.method === "POST") {

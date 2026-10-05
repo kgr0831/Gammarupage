@@ -15,6 +15,8 @@ export function briefConfig(request, env = process.env) {
     discordApplicationId: env.DISCORD_APPLICATION_ID || "",
     discordClientSecret: env.DISCORD_CLIENT_SECRET || "",
     discordBotToken: env.DISCORD_BOT_TOKEN || "",
+    discordDeliveryMode: env.DISCORD_DELIVERY_MODE || "direct",
+    discordWorkerToken: env.DISCORD_WORKER_TOKEN || "",
     discordReportChannelId: (env.DISCORD_REPORT_CHANNEL_ID || "").trim(),
     dmEnabled: env.DISCORD_DM_ENABLED === "true",
   };

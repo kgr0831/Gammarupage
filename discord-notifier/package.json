@@ -1,0 +1,8 @@
+{
+  "name": "gammaru-discord-notifier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node index.js", "check": "node index.js --check" }
+}
