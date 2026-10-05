@@ -53,7 +53,7 @@ test("each service serves its own complete guide and personal guide uses its own
   assert.match(clubGuide, /동아리가 직접 확보할 운영비/);
   assert.match(clubGuide, /문서 버전: 3/);
   assert.doesNotMatch(clubGuide, /동아리 운영자금 조사는 종료/);
-  assert.match(personalGuide, /미국 주식·ETF/);
+  assert.match(personalGuide, /개발·AI·IT 공모전/);
   assert.match(personalGuide, /동아리 작업과 별도로/);
   assert.match(personalGuide, /문서 버전: 4/);
   assert.match(personalGuide, /https:\/\/personal.example.org\/reports\/upload/);

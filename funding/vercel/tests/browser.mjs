@@ -189,21 +189,36 @@ try {
   assert.equal((await app.store.read()).reports.length, 2);
   await publisherContext.close();
   app.config.personalOwnerId = user;
-  const personalItems = ["contest", "trading", "job"].map((category) => ({ ...opportunity, id: `browser-${category}`, category, title: { contest: "AI 개발 공모전 · 검증용", trading: "미국 경제 발표 관찰 · 검증용", job: "AI 개발 채용 · 검증용" }[category], sourceUrl: `https://example.org/${category}` }));
+  const personalItems = ["contest", "job"].map((category) => ({ ...opportunity, id: `browser-${category}`, category, title: { contest: "AI 개발 공모전 · 검증용", job: "AI 개발 채용 · 검증용" }[category], sourceUrl: `https://example.org/${category}` }));
   await app.store.update((s) => {
     s.reports[0].audience = "personal"; s.reports[0].opportunities = personalItems;
+    s.reports[0].title = "개인 데일리 브리핑 — 검증용";
+    s.reports[0].summary = "공모전·채용 화면 검증용입니다. 실제 추천 정보가 아닙니다.";
     for (const item of personalItems) s.opportunities[item.id] = { ...item, status: "new", note: "", revision: 0, lastReported: today, history: [] };
   });
   await member.goto(`${app.config.origin}/reports/${today}`);
-  for (const category of ["contest", "trading", "job"]) assert.equal(await member.locator(`#category-${category} .opportunity-row`).count(), 1);
-  await member.locator("#category-trading").getByRole("button", { name: "보류", exact: true }).click();
-  await member.waitForURL(`**/reports/${today}?progress=browser-trading*`);
-  assert.equal((await app.store.read()).opportunities["browser-trading"].status, "deferred");
+  for (const category of ["contest", "job"]) assert.equal(await member.locator(`#category-${category} .opportunity-row`).count(), 1);
+  await member.locator("#category-job").getByRole("button", { name: "보류", exact: true }).click();
+  await member.waitForURL(`**/reports/${today}?progress=browser-job*`);
+  assert.equal((await app.store.read()).opportunities["browser-job"].status, "deferred");
   for (const width of [1440, 390, 320]) {
     await member.setViewportSize({ width, height: 1000 });
     await member.evaluate(() => scrollTo(0, 0));
     assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await member.screenshot({ path: path.join(output, `personal-${width}.png`), fullPage: true });
   }
-  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM, channel UI, saved admin/subscriber progress and next-research feedback. Mock private storage only; no deployment or real messages.");
+  await member.setViewportSize({ width: 390, height: 844 });
+  await member.goto(`${app.config.origin}/reports/profile`);
+  await member.getByLabel("기술과 경험", { exact: true }).fill("검증용 프로필 · 실제 개인 조건 아님");
+  await member.getByRole("button", { name: "조사 조건 저장", exact: true }).click();
+  await member.getByText("조사 조건을 저장했습니다. 다음 조사부터 반영됩니다.", { exact: true }).waitFor();
+  await member.reload();
+  assert.equal(await member.getByLabel("기술과 경험", { exact: true }).inputValue(), "검증용 프로필 · 실제 개인 조건 아님");
+  assert.equal(await member.locator(".brand").innerText(), "PERSONAL BRIEF");
+  for (const width of [390, 320]) {
+    await member.setViewportSize({ width, height: 844 });
+    assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await member.screenshot({ path: path.join(output, `personal-profile-${width}.png`), fullPage: true });
+  }
+  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM, channel UI, saved admin/subscriber progress, private personal profile and next-research feedback. Mock private storage only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

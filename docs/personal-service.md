@@ -7,7 +7,7 @@
 | --- | --- | --- |
 | 사이트 | https://gammarupage.vercel.app | 별도 Vercel 프로젝트 주소 |
 | REPORTS_SERVICE | club (기본값) | personal |
-| 수집 | 동아리 후원·운영자금·유용한 정보 | 개발·AI·IT 공모전/채용, 미국 주식·ETF |
+| 수집 | 동아리가 직접 확보할 운영비·현물·장비·공간·단체 서비스 | 개발·AI·IT 공모전·채용 |
 | 열람·진행 상태 변경 | 관리자와 승인된 구독자 | 관리자와 승인된 소유자 |
 | 일일 알림 | 기존 Dishost 봇 → 데일리 스크럼 채널 | 개인 사이트 → 본인 Discord DM |
 | 자료 | Design.md, dots-daily-brief.md, gammaruInfo.md | personal-Design.md, dots-personal-brief.md, personal-brief-profile.md |
@@ -23,7 +23,8 @@
   기존 겜마루 Redirect는 유지한다.
 - `DISCORD_DELIVERY_MODE=direct`, `DISCORD_DM_ENABLED=true`, `DISCORD_REPORT_CHANNEL_ID`는 비워 둔다.
   개인용에서 채널 설정이 남아 있어도 본인 DM만 허용한다. 기존 Dishost 설정은 변경하지 않는다.
-- 새 사이트에서 소유자가 Discord로 로그인하면 구독 요청이 생성된다. 해당 사이트 관리자 화면에서 승인한다.
+- 새 사이트에서는 미리 지정한 소유자가 Discord로 처음 로그인하면 바로 개인 보고서를 열람할 수 있다.
+  다른 Discord 계정은 등록·열람할 수 없다. 이미 해제·취소한 구독은 재로그인만으로 복구되지 않는다.
 
 루트 주소는 개인 보고서 목록 `/reports`로 이동한다. 로그인·HTML 업로드·날짜별 보고서 경로는
 겜마루와 같지만 호스트가 다르다. 같은 날짜의 보고서를 각각 발행할 수 있고, 상태·메모·세션도 독립적이다.
@@ -38,3 +39,11 @@
 
 개인 자격·경력·지역·투자 성향은 미확정이다. [개인 프로필](personal-brief-profile.md)의 조건을 사용한다.
 지원서 제출·자동 매매·팩트챗 자동 대체는 이번 범위에 포함하지 않는다.
+
+## 비공개 조사 조건
+
+소유자 또는 관리자가 `/reports/profile`에서 학적·기술·직무·지역·참가 조건을 저장한다.
+이 값은 개인 사이트의 Private Blob에만 저장되며 공개 저장소의 Markdown에는 적지 않는다.
+업로드 계정은 `/reports/context`와 HTML 조사 자료에서 이 조건을 읽을 수 있지만 수정할 수 없다.
+조건이 바뀌면 stateVersion이 증가해 변경 전 조건으로 작성한 보고서가 그대로 발행되지 않는다.
+회원 개인정보를 DM 요약에 복사하지 않는다. 실제 보유 잔고·계좌 정보는 필요하지 않다.

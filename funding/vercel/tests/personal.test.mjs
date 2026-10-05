@@ -9,7 +9,7 @@ import { digest } from "../../schema.mjs";
 
 const owner = "100000000000000001", other = "100000000000000002", channel = "300000000000000001";
 const item = (category = "contest") => ({ id: `personal-${category}`, category, title: `Test ${category}`, sourceUrl: `https://example.org/${category}`, benefit: "Test summary", eligibility: "Requirements unconfirmed", deadline: "Unconfirmed", nextAction: "Read the official source", changeNote: "" });
-const html = (stateVersion = 0) => `<html><body><h1>Personal test</h1><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion, opportunities: [item(), item("trading"), item("job")] })}</script></body></html>`;
+const html = (stateVersion = 0) => `<html><body><h1>Personal test</h1><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion, opportunities: [item(), item("job")] })}</script></body></html>`;
 const fixture = () => setup({ personalOwnerId: owner, discordReportChannelId: channel, dmEnabled: true, discordDeliveryMode: "worker", discordWorkerToken: "a".repeat(64) });
 async function publish(app, stateVersion = 0) {
   await app.member(owner); await app.member(other);
@@ -118,8 +118,8 @@ test("personal categories round-trip; legacy club items stay stored but leave th
   assert.ok(!feed.carryForwardIds.includes("legacy"));
   assert.equal(feed.known.find(i => i.id === "legacy").note, "Club archive");
   assert.equal(feed.known.find(i => i.id === "legacy").history, undefined);
-  assert.deepEqual(feed.known.filter(i => i.id !== "legacy").map(i => i.category).sort(), ["contest", "job", "trading"]);
-  for (const category of ["invalid", "support", undefined]) assert.throws(() => validateManifest({ version: 1, stateVersion: 0, audience: "personal", opportunities: [{ ...item(), category }] }));
+  assert.deepEqual(feed.known.filter(i => i.id !== "legacy").map(i => i.category).sort(), ["contest", "job"]);
+  for (const category of ["invalid", "support", "trading", undefined]) assert.throws(() => validateManifest({ version: 1, stateVersion: 0, audience: "personal", opportunities: [{ ...item(), category }] }));
 });
 
 test("OAuth rejects other accounts before creating a member, session, or login notice", async () => {
