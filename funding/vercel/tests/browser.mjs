@@ -154,7 +154,7 @@ try {
   assert.equal(memberFeedback.known[0].note, "행사 예산 확정 후 재검토");
   await admin.goto(`${app.config.origin}/reports/progress`);
   await admin.locator('.status-filters a[href$="status=in_progress"]').click();
-  await admin.locator('.full-report > summary').click();
+  assert.equal(await admin.locator('.full-report > summary').count(), 0, "Club progress is directly visible");
   await admin.getByRole("heading", { name: opportunity.title }).waitFor();
   await admin.locator('.status-filters a[href$="status=completed"]').click();
   assert.equal(await admin.locator(".opportunity-row").count(), 0);
@@ -168,6 +168,26 @@ try {
   assert.equal(await noScript.getByRole("button", { name: "완료", exact: true }).isDisabled(), true);
   assert.equal((await app.store.read()).opportunities[opportunity.id].note, "행사 예산 확정 후 재검토");
   await noScriptContext.close();
+  const publisherContext = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
+  await publisherContext.addCookies([{ name: "briefs", value: (await app.session("publisher")).split("=")[1], url: app.config.origin }]);
+  const publisher = await publisherContext.newPage();
+  await publisher.goto(`${app.config.origin}/reports/upload?guide=1`);
+  await publisher.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
+  await publisher.getByText("파일 대신 HTML 내용 붙여넣기", { exact: true }).click();
+  await publisher.getByLabel("발행일", { exact: true }).fill("2020-01-01");
+  await publisher.getByLabel("보고서 제목", { exact: true }).fill("붙여넣기 검증용 과거 보고서");
+  await publisher.getByLabel("HTML 전체 내용", { exact: true }).fill(sampleHtml);
+  assert.equal(await publisher.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await publisher.screenshot({ path: path.join(output, "paste-upload-mobile.png"), fullPage: true });
+  await publisher.getByRole("button", { name: "HTML 미리보기", exact: true }).click();
+  await publisher.frameLocator("iframe").getByRole("heading", { name: "가상 보고서 · 실제 공고 아님" }).waitFor();
+  await publisher.getByLabel("내용을 확인했고 보고서 등록에 동의합니다.").check();
+  await publisher.getByRole("button", { name: "이 HTML 등록하기" }).click();
+  await publisher.getByText("2020-01-01 보고서를 등록했습니다.", { exact: false }).waitFor();
+  await publisher.getByText("알림 기록이 없습니다.", { exact: false }).waitFor();
+  await publisher.reload();
+  assert.equal((await app.store.read()).reports.length, 2);
+  await publisherContext.close();
   app.config.personalOwnerId = user;
   const personalItems = ["contest", "trading", "job"].map((category) => ({ ...opportunity, id: `browser-${category}`, category, title: { contest: "AI 개발 공모전 · 검증용", trading: "미국 경제 발표 관찰 · 검증용", job: "AI 개발 채용 · 검증용" }[category], sourceUrl: `https://example.org/${category}` }));
   await app.store.update((s) => {

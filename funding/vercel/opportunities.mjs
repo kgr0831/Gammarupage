@@ -1,7 +1,7 @@
 import { check } from "../schema.mjs";
 
 export const progressLabels = { new: "검토 전", deferred: "보류", in_progress: "진행 중", completed: "진행 완료", dismissed: "안함" };
-export const categoryLabels = { contest: "공모전", trading: "미국 주식·ETF", job: "채용공고", support: "기존 동아리 정보" };
+export const categoryLabels = { contest: "공모전", trading: "미국 주식·ETF", job: "채용공고", support: "동아리 지원 정보" };
 const terminal = new Set(["completed", "dismissed"]);
 const text = (value, limit, label, required = true) => {
   check(typeof value === "string" && value.length <= limit && (!required || value.trim()) && !/[\x00-\x1f]/.test(value), `${label} 형식을 확인해 주세요.`);
@@ -21,7 +21,7 @@ export function sourceUrl(value) {
 export function validateManifest(input) {
   check(input && input.version === 1 && Number.isSafeInteger(input.stateVersion) && input.stateVersion >= 0, "진행 항목의 version과 최신 stateVersion을 확인해 주세요.");
   check(Array.isArray(input.opportunities) && input.opportunities.length <= 20, "진행 항목은 최대 20개입니다.");
-  check(input.audience === undefined || input.audience === "personal", "보고서 audience를 확인해 주세요.");
+  check(input.audience === undefined || ["club", "personal"].includes(input.audience), "보고서 audience를 확인해 주세요.");
   const ids = new Set(), sources = new Set();
   const opportunities = input.opportunities.map((item) => {
     check(item && typeof item === "object", "진행 항목 형식을 확인해 주세요.");
@@ -29,7 +29,7 @@ export function validateManifest(input) {
     check(/^[a-z0-9][a-z0-9-]{2,79}$/.test(id) && !["constructor", "prototype"].includes(id) && !ids.has(id), "항목 ID는 중복 없는 영문 소문자·숫자·하이픈이어야 합니다.");
     check(!("status" in item) && !("note" in item), "사용자의 진행 상태와 메모는 HTML에서 변경할 수 없습니다.");
     const category = item.category ?? "support";
-    check(Object.hasOwn(categoryLabels, category) && (input.audience !== "personal" || category !== "support"), "개인 보고서는 contest, trading, job 중 category를 지정하세요.");
+    check(Object.hasOwn(categoryLabels, category) && (input.audience !== "personal" || category !== "support"), input.audience === "personal" ? "개인 보고서는 contest, trading, job 중 category를 지정하세요." : "분야(category)를 확인하거나 동아리 보고서에서는 생략해 주세요.");
     const source = sourceUrl(item.sourceUrl);
     check(!sources.has(source), "같은 공식 원문은 하나의 진행 항목으로 묶어 주세요.");
     ids.add(id); sources.add(source);
@@ -58,7 +58,7 @@ export function manifestFromHtml(html) {
   check(/(?:^|\s)type\s*=\s*(["'])application\/json\1/i.test(matches[0][1]), "진행 항목은 application/json 데이터로 넣어 주세요.");
   return parseManifest(matches[0][2]);
 }
-export function registerOpportunities(state, report, manifest) {
+export function validateResearchState(state, manifest) {
   if (!manifest) return;
   check(manifest.stateVersion === state.workflowVersion, "조사 후 진행 기록이 변경되었습니다. /reports/research-state를 다시 읽고 HTML의 stateVersion과 내용을 갱신해 주세요.", 409);
   for (const item of manifest.opportunities) {
@@ -67,6 +67,13 @@ export function registerOpportunities(state, report, manifest) {
     check(!sameSource || sameSource.id === item.id, `이전에 보고한 원문입니다. 기존 ID ${sameSource?.id}를 재사용해 주세요.`, 409);
     check(!prior || prior.sourceUrl === item.sourceUrl, "기존 항목 ID의 공식 원문을 다른 기회로 바꿀 수 없습니다.", 409);
     check(!prior || !terminal.has(prior.status) || item.changeNote, "진행 완료·안함 항목을 다시 보고하려면 확인된 변화(changeNote)가 필요합니다.", 409);
+  }
+}
+export function registerOpportunities(state, report, manifest) {
+  if (!manifest) return;
+  validateResearchState(state, manifest);
+  for (const item of manifest.opportunities) {
+    const prior = state.opportunities[item.id];
     if (!prior) state.opportunities[item.id] = {
       ...item, status: "new", note: "", revision: 0, updatedAt: null, history: [],
       firstReported: report.date, lastReported: report.date,
@@ -101,7 +108,7 @@ export function researchState(state, personal = false) {
   }).sort((a, b) => b.lastReported.localeCompare(a.lastReported) || a.id.localeCompare(b.id));
   return {
     version: 1, stateVersion: state.workflowVersion, generatedAt: new Date().toISOString(),
-    statuses: progressLabels, categories: categoryLabels, audience: personal ? "personal" : "club",
+    statuses: progressLabels, categories: personal ? categoryLabels : { support: categoryLabels.support }, audience: personal ? "personal" : "club",
     instructions: [
       "새 기회는 known의 ID·공식 원문과 대조하고, 동일 항목은 기존 ID를 유지하세요.",
       "검토 전·보류·진행 중은 최신 접수 상태와 사용자의 메모를 확인해 이어서 보고하세요.",

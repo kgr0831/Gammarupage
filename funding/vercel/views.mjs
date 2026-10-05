@@ -11,13 +11,13 @@ export function login(type, configured, channelMode = false, personal = false) {
   if (type === "member") return page("보고서 로그인", `${heading}<div class="panel narrow"><h2>구독자 전용 보고서</h2><p>처음 로그인하면 Discord 이름으로 구독 신청이 접수됩니다. ${channelMode ? "관리자 승인 후 보고서를 열람할 수 있습니다. 새 보고서의 요약과 링크는 Discord 서버 채널에 게시됩니다." : "관리자 승인 후 보고서를 열람하고 새 보고서 링크를 DM으로 받습니다."}</p>${configured ? '<a class="button" href="/reports/auth/discord">Discord로 로그인하고 구독 신청 →</a><p class="hint">로그인 완료 안내를 DM으로 보내드립니다. 로그인은 이 브라우저에서 30일간 유지되며, 구독과 보고서 알림은 언제든 해제할 수 있습니다.</p>' : '<p class="notice">Discord 로그인 연결을 준비 중입니다.</p>'}</div>`);
   return page("보고서 관리 로그인", `${heading}<div class="panel narrow"><h2>${type === "admin" ? "관리자 로그인" : "업로드 전용 로그인"}</h2>${configured ? `<form action="/reports/login/${type}" method="post">${type === "admin" ? '<label>아이디<input name="username" required autocomplete="username"></label>' : ""}<label>${type === "admin" ? "비밀번호" : "업로드 키"}<input type="password" name="password" required autocomplete="current-password"></label><button class="button">로그인</button></form>` : '<p class="notice">운영자 설정이 필요합니다.</p>'}</div>`);
 }
-export function archive(reports, role, search, currentPage) {
+export function archive(reports, role, search, currentPage, personal = false) {
   const all = reports.filter((r) => `${r.date} ${r.title} ${r.summary}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => b.date.localeCompare(a.date));
   const count = Math.max(1, Math.ceil(all.length / 30));
   const number = Math.min(Math.max(1, currentPage), count);
   const visible = all.slice((number - 1) * 30, number * 30);
   const pageUrl = (n) => `/reports?${new URLSearchParams({ q: search, page: String(n) })}`;
-  return page("보고서 보관함", `${hero('DAILY <span>ARCHIVE.</span>', "오늘의 기회부터 지난 기록까지. 공모전·시장 정보·채용을 날짜별로 확인하세요.")}<form method="get" action="/reports" class="panel"><label>보고서 검색<input type="search" name="q" value="${esc(search)}" placeholder="날짜, 제목 또는 요약" maxlength="100"></label><button class="button secondary small">검색</button></form><div class="section-heading"><h2>누적 보고서 ${all.length}개</h2><small>LATEST FIRST / ${number} OF ${count}</small></div>${visible.map((r) => `<a class="archive-row" href="/reports/${r.date}"><div><span class="meta">${r.date}</span><h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p></div><span class="tag accent">HTML 보고서 열기 ↗</span></a>`).join("") || '<p class="empty">등록된 보고서가 없습니다.</p>'}<div class="row">${number > 1 ? `<a class="button secondary" href="${esc(pageUrl(number - 1))}">이전 목록</a>` : ""}${number < count ? `<a class="button secondary" href="${esc(pageUrl(number + 1))}">다음 목록</a>` : ""}</div>`, role);
+  return page("보고서 보관함", `${hero('DAILY <span>ARCHIVE.</span>', personal ? "오늘의 기회부터 지난 기록까지. 공모전·시장 정보·채용을 날짜별로 확인하세요." : "겜마루의 외부 후원·운영자금·유용한 정보를 날짜별로 확인하세요.")}<form method="get" action="/reports" class="panel"><label>보고서 검색<input type="search" name="q" value="${esc(search)}" placeholder="날짜, 제목 또는 요약" maxlength="100"></label><button class="button secondary small">검색</button></form><div class="section-heading"><h2>누적 보고서 ${all.length}개</h2><small>LATEST FIRST / ${number} OF ${count}</small></div>${visible.map((r) => `<a class="archive-row" href="/reports/${r.date}"><div><span class="meta">${r.date}</span><h2>${esc(r.title)}</h2><p>${esc(r.summary)}</p></div><span class="tag accent">HTML 보고서 열기 ↗</span></a>`).join("") || '<p class="empty">등록된 보고서가 없습니다.</p>'}<div class="row">${number > 1 ? `<a class="button secondary" href="${esc(pageUrl(number - 1))}">이전 목록</a>` : ""}${number < count ? `<a class="button secondary" href="${esc(pageUrl(number + 1))}">다음 목록</a>` : ""}</div>`, role);
 }
 function readingPage(title, content, role) {
   return page(title, content, role).replace("</head>", '<style>' + readerShellStyles + '</style></head>').replace("<body>", '<body class="report-reader">');
@@ -25,13 +25,14 @@ function readingPage(title, content, role) {
 export function viewer(report, role, opportunities = {}, focused = "", filter = "") {
   return readingPage(report.title, reportOverview(report, role, opportunities, focused, filter), role);
 }
-export function progressPage(opportunities, role, filter = "") {
-  return readingPage("진행 현황", progressOverview(opportunities, role, filter), role);
+export function progressPage(opportunities, role, filter = "", personal = false) {
+  return readingPage("진행 현황", progressOverview(opportunities, role, filter, personal), role);
 }
 export function publisherGuide({ instructions, design, context, research, today }, role) {
   const source = (id, title, text) => `<section class="panel guide-section" id="${id}"><h2>${title}</h2><pre>${esc(text)}</pre></section>`;
   const publishedToday = research.previousReports.some((report) => report.date === today);
   const content = `<div class="publisher-guide"><header class="panel"><h1>조사 자료</h1>
+    <p class="notice">${research.audience === "personal" ? "개인 데일리 브리핑 · 본인 DM" : "겜마루 동아리 보고서 · 외부 후원·운영자금·도움되는 정보"}</p>
     <p>작업 지침, 조사 대상 정보, 디자인 기준과 현재 진행 기록을 이 페이지에서 읽을 수 있습니다.</p>
     <p>한국시간 <strong>${esc(today)}</strong> · <strong>stateVersion: ${research.stateVersion}</strong> · 오늘 보고서 <strong>${publishedToday ? "등록됨 · 중복 발행하지 마세요" : "미등록"}</strong></p>
     <p class="hint">진행 기록은 이 페이지를 열었을 때의 값입니다. 발행 직전에 새로고침하고 변경된 상태와 메모를 반영하세요.</p>
@@ -44,7 +45,29 @@ export function publisherGuide({ instructions, design, context, research, today 
 export function upload(today, role, published, deliveries, enabled, channelId = "") {
   const target = channelId ? "채널" : "DM";
   const pending = deliveries.filter((d) => d.date === today && d.status === "pending" && (channelId ? d.channelId === channelId : !d.channelId)).length;
-  return page("HTML 업로드", `${hero('UPLOAD <span>BRIEF.</span>', "완성한 HTML을 올리면 개별 주소와 누적 목록이 함께 생성됩니다.")}<div class="panel">${published ? `<p class="notice">${esc(published.date)} 보고서를 등록했습니다. 주소: <a href="/reports/${published.date}">/reports/${published.date}</a> · <a href="/reports">전체 목록</a></p>` : ""}<form action="/reports/upload/preview" method="post" enctype="multipart/form-data"><label>발행일<input type="date" name="date" required value="${today}" max="${today}"></label><label>보고서 제목<input name="title" required maxlength="150" placeholder="겜마루 일일 지원 정보"></label><label>목록과 ${target}에 표시할 요약<input name="summary" maxlength="500" placeholder="핵심 기회와 추천 행동을 2~3문장으로 적어 주세요"></label><p class="hint">${target} 알림에는 제목과 이 요약을 함께 보냅니다. 요약이 길면 300자까지 표시합니다.</p><label>HTML 파일<input name="html" type="file" accept=".html,.htm,text/html" required></label><p class="hint">UTF-8 HTML, 최대 2MB. Design.md 스타일을 포함한 파일을 올려 주세요. 기존 날짜는 덮어쓰지 않습니다.</p><label><input name="notify" type="checkbox" value="yes" checked>${channelId ? "오늘 보고서의 제목·요약·링크를 Discord 서버 채널에 게시하기" : "오늘 보고서라면 승인·알림 동의한 구독자에게 요약·링크 DM 보내기"}</label><button class="button">HTML 미리보기</button></form></div><div class="panel"><h2>알림 처리</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${formButton("/reports/notify", channelId ? "오늘 보고서 채널 게시·대기 처리" : "남은 알림 처리", "", "secondary")}<p class="hint">${channelId ? "설정된 서버 채널에 하루 한 번 게시합니다. 채널을 볼 수 있는 멤버는 요약을 읽을 수 있고, 전체 보고서는 사이트의 구독 승인이 필요합니다. " : ""}전송 결과가 불확실한 메시지는 중복 발송하지 않습니다. 과거 보고서는 업로드해도 알림을 보내지 않습니다.</p></div><div class="row"><a class="button secondary small" href="/reports/upload?guide=1#context">조사 대상 정보</a><a class="button secondary small" href="/reports/upload?guide=1#design">Design.md</a><a class="button secondary small" href="/reports/upload?guide=1#research-state">이전 보고·진행 기록</a><a class="button secondary small" href="/reports/upload?guide=1#instructions">dots 운영 지침</a></div>`, role);
+  const date = published?.date || today;
+  const rows = deliveries.filter((d) => d.date === date && (channelId ? d.channelId === channelId : !d.channelId));
+  const labels = { pending: "대기", sending: "전송 중", sent: "전송 완료", blocked: "전송 권한 없음", failed: "실패", uncertain: "결과 불명", cancelled: "취소" };
+  const counts = Object.fromEntries(Object.keys(labels).map((key) => [key, rows.filter((row) => row.status === key).length]));
+  const result = rows.length
+    ? `<dl class="notification-counts">${Object.entries(labels).map(([key, label]) => `<div data-delivery-status="${key}"><dt>${label}</dt><dd>${counts[key]}건</dd></div>`).join("")}</dl>`
+    : '<p class="notice">알림 기록이 없습니다. 보고서 발행과 알림 신청 여부를 확인해 주세요.</p>';
+  return readingPage("HTML 업로드", `<header class="overview-heading"><p class="overview-date">보고서 등록</p><h1>HTML 업로드</h1><p class="overview-summary">최신 자료 확인 → HTML 미리보기 → 발행 → 알림 확인</p><a class="button secondary small" href="/reports/upload?guide=1">조사 자료·최신 진행 상태 열기</a></header>
+    ${published ? `<section class="panel"><p class="notice">${esc(published.date)} 보고서를 등록했습니다. 주소: <a href="/reports/${published.date}">/reports/${published.date}</a></p><p>이 날짜는 이미 발행되었습니다. 다시 올리지 말고 아래 알림 결과를 확인하세요.</p></section>` : ""}
+    <section class="panel" id="delivery-result"><h2>${esc(date)} 알림 결과</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${result}
+    <p class="hint">전송 완료는 Discord가 메시지 생성을 확인한 건수입니다. 대기 0건만으로 전송 성공을 뜻하지 않습니다. 결과 불명·실패가 있으면 운영자가 확인해야 합니다.</p>
+    <div class="row"><a class="button secondary small" href="/reports/upload${published ? `?published=${published.date}` : ""}#delivery-result">알림 결과 새로고침</a>${formButton("/reports/notify", channelId ? "오늘 보고서 채널 게시·대기 처리" : "남은 알림 처리", "", "secondary small")}</div>
+    <p class="hint">${channelId ? "설정된 서버 채널에 하루 한 번 게시합니다. 전체 보고서는 구독 승인이 필요합니다. " : ""}전송 결과가 불확실한 메시지는 중복 발송하지 않습니다. 과거 보고서는 업로드해도 알림을 보내지 않습니다.</p></section>
+    <section class="panel"><h2>보고서 입력</h2><form action="/reports/upload/preview" method="post" enctype="multipart/form-data">
+    <label>발행일<input type="date" name="date" required value="${today}" max="${today}"></label>
+    <label>보고서 제목<input name="title" required maxlength="150" placeholder="겜마루 일일 지원 정보"></label>
+    <label>목록과 ${target}에 표시할 요약<input name="summary" maxlength="500" placeholder="핵심 기회와 추천 행동을 2~3문장으로 적어 주세요"></label><p class="hint">${target} 알림에는 제목과 이 요약을 함께 보냅니다. 요약이 길면 300자까지 표시합니다.</p>
+    <label>HTML 파일<input name="html" type="file" accept=".html,.htm,text/html"></label>
+    <details class="html-paste"><summary>파일 대신 HTML 내용 붙여넣기</summary><label>HTML 전체 내용<textarea name="htmlText" rows="12" spellcheck="false" placeholder="&lt;!doctype html&gt;부터 문서 끝까지 붙여넣으세요."></textarea></label></details>
+    <p class="hint">파일과 붙여넣기 중 하나만 사용하세요. UTF-8 HTML, 최대 2MB. Design.md 스타일을 포함하며 기존 날짜는 덮어쓰지 않습니다.</p>
+    <label><input name="notify" type="checkbox" value="yes" checked>${channelId ? "오늘 보고서의 제목·요약·링크를 Discord 서버 채널에 게시하기" : "오늘 보고서라면 승인·알림 동의한 구독자에게 요약·링크 DM 보내기"}</label><button class="button">HTML 미리보기</button></form></section>
+    <div class="row"><a class="button secondary small" href="/reports/upload?guide=1#context">조사 대상 정보</a><a class="button secondary small" href="/reports/upload?guide=1#design">Design.md</a><a class="button secondary small" href="/reports/upload?guide=1#research-state">이전 보고·진행 기록</a><a class="button secondary small" href="/reports/upload?guide=1#instructions">dots 운영 지침</a></div>`, role)
+    .replace("</head>", "<style>.report-reader>.topbar{display:flex}.notification-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:24px 0}.notification-counts div{padding:12px;background:var(--navy);border:1px solid var(--line)}.notification-counts dt{font-size:14px}.notification-counts dd{margin:4px 0 0;font-size:22px;font-weight:700}.html-paste{margin:20px 0}.html-paste summary{cursor:pointer;text-decoration:underline}.html-paste textarea{font-family:monospace;font-size:16px;min-width:0;max-width:100%}</style></head>");
 }
 export function preview(draft, role) {
   const manifestNotice = draft.manifest ? `<p>진행 관리에 연결할 항목 ${draft.manifest.opportunities.length}개 · 조사 기준 버전 ${draft.manifest.stateVersion}</p><ul>${draft.manifest.opportunities.map((item) => `<li>${esc(item.title)} · ${esc(item.id)}</li>`).join("")}</ul>` : '<p class="notice">진행 항목 데이터가 없는 HTML입니다. 본문은 발행되지만 상태·메모 관리에는 연결되지 않습니다.</p>';

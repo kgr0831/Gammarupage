@@ -8,7 +8,7 @@ import { BriefStore, PrivateBlobFiles } from "./storage.mjs";
 import { deliverBriefLinks, deliverLoginNotice, deliverApprovalNotice } from "./notify.mjs";
 import * as view from "./views.mjs";
 import { readableReport } from "./reader.mjs";
-import { researchState, parseManifest, manifestFromHtml, progressLabels } from "./opportunities.mjs";
+import { researchState, parseManifest, manifestFromHtml, progressLabels, validateResearchState } from "./opportunities.mjs";
 import { handleWorkerJob, notificationTransportReady, workerMode } from "./worker-jobs.mjs";
 import { reportChannel, allowedMember } from "./access.mjs";
 
@@ -213,7 +213,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
             ]);
             return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role));
           }
-          return send(view.upload(today, session.role, data.reports.find((r) => r.date === url.searchParams.get("published")), Object.values(data.deliveries), notificationsEnabled, channelId));
+          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled, channelId));
         }
         if (Object.hasOwn(sourceFiles, pathname.slice("/reports/".length)) && request.method === "GET") return send(await source(pathname.slice("/reports/".length)), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
@@ -227,11 +227,20 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         }
         if (pathname === "/reports/upload/preview" && request.method === "POST") {
           const form = await formData(request), file = form.get("html");
-          check(file && typeof file.arrayBuffer === "function" && /\.html?$/i.test(file.name) && file.size <= 2 * 1024 * 1024, "2MB 이하의 .html 파일을 선택해 주세요.");
-          let html;
-          try { html = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer()); } catch { check(false, "HTML을 UTF-8 인코딩으로 저장한 뒤 올려 주세요."); }
-          check(!personal || manifestFromHtml(html)?.audience === "personal", "개인 보고서 지침의 audience: personal과 category를 포함해 주세요.");
-          check(personal || manifestFromHtml(html)?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.");
+          const pasted = textField(form, "htmlText"), hasText = !!pasted.trim();
+          const hasFile = file && typeof file.arrayBuffer === "function" && !!file.name;
+          check(hasFile || hasText, "HTML 파일을 선택하거나 HTML 전체 내용을 붙여넣어 주세요.");
+          check(!(hasFile && hasText), "파일 선택과 HTML 붙여넣기 중 하나만 사용해 주세요.");
+          let html = pasted;
+          if (hasFile) {
+            check(/\.html?$/i.test(file.name) && file.size > 0 && file.size <= 2 * 1024 * 1024, "2MB 이하의 .html 파일을 선택해 주세요.");
+            try { html = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer()); } catch { check(false, "HTML을 UTF-8 인코딩으로 저장한 뒤 올려 주세요."); }
+          }
+          check(Buffer.byteLength(html) <= 2 * 1024 * 1024, "HTML은 2MB 이하여야 합니다.", 413);
+          const manifest = manifestFromHtml(html);
+          check(!personal || manifest?.audience === "personal", "개인 보고서 지침의 audience: personal과 category를 포함해 주세요.");
+          check(personal || manifest?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.");
+          validateResearchState(data, manifest);
           const draft = await store.stage({ date: textField(form, "date"), title: textField(form, "title"), summary: textField(form, "summary"), html, notify: textField(form, "notify") === "yes" }, sessionHash, today);
           return send(view.preview(draft, session.role));
         }
@@ -250,7 +259,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (pathname === "/reports/progress" && request.method === "GET") {
         const filter = url.searchParams.get("status") || "";
         check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
-        return send(view.progressPage(data.opportunities, session.role, filter));
+        return send(view.progressPage(data.opportunities, session.role, filter, personal));
       }
       const progressMatch = pathname.match(/^\/reports\/opportunities\/([a-z0-9-]{3,80})\/status$/);
       if (progressMatch && request.method === "POST") {
@@ -270,7 +279,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         await store.attachOpportunities(attachMatch[1], parseManifest(textField(form, "manifest")));
         return redirect(`/reports/${attachMatch[1]}?progress=1`);
       }
-      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1)));
+      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);
       check(reportMatch && request.method === "GET", "페이지를 찾을 수 없습니다.", 404);
       const report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);
@@ -282,7 +291,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
       return send(view.viewer(report, session.role, data.opportunities, url.searchParams.get("progress") || "", filter));
     } catch (error) {
-      return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports">보고서 목록</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a></section>`), error.status || 503);
+      return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports/upload?guide=1">최신 조사 자료 확인</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a> <a class="button secondary" href="/reports">보고서 목록</a></section>`), error.status || 503);
     }
   };
 }

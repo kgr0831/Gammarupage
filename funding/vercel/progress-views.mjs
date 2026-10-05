@@ -57,8 +57,8 @@ export function reportOverview(report, role, opportunities, focused, filter) {
     ${fullReport}`;
 }
 
-export function progressOverview(opportunities, role, filter) {
+export function progressOverview(opportunities, role, filter, personal = false) {
   const all = Object.values(opportunities).sort((a, b) => b.lastReported.localeCompare(a.lastReported));
   const visible = all.filter((item) => !filter || item.status === filter);
-  return `<header class="overview-nav"><a href="/reports">← 전체 보고서 목록</a><span>DAILY BRIEF</span></header><section class="overview-heading"><p class="overview-date">진행 기록</p><h1>공모전·시장 정보·채용 진행 현황</h1><p class="overview-summary">상태와 메모는 다음 조사에 반영됩니다. 지원서 제출이나 매매 주문은 실행되지 않습니다.</p></section>${statusFilters(all, "/reports/progress", filter)}<section class="opportunities" aria-label="진행 항목">${categoryRows(visible, role)}</section>`;
+  return `<header class="overview-nav"><a href="/reports">← 전체 보고서 목록</a><span>DAILY BRIEF</span></header><section class="overview-heading"><p class="overview-date">진행 기록</p><h1>${personal ? "공모전·시장 정보·채용 진행 현황" : "겜마루 지원 정보 진행 현황"}</h1><p class="overview-summary">${personal ? "상태와 메모는 다음 조사에 반영됩니다. 지원서 제출이나 매매 주문은 실행되지 않습니다." : "동아리의 검토 상태와 메모를 함께 관리합니다. 저장한 내용은 다음 보고서 조사에 반영됩니다."}</p></section>${statusFilters(all, "/reports/progress", filter)}<section class="opportunities" aria-label="진행 항목">${personal ? categoryRows(visible, role) : opportunityRows(visible, role) || '<p class="empty">이 상태의 항목이 없습니다.</p>'}</section>`;
 }
