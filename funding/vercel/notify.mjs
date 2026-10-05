@@ -4,17 +4,32 @@ import { seoulClock } from "../clock.mjs";
 // A transactional login notice is independent of the daily newsletter switch.
 // Claim once in Blob so duplicate callbacks/workers cannot send the same notice twice.
 export async function deliverLoginNotice(store, config, memberId, noticeId, fetcher = fetch) {
+  return deliverMemberNotice(store, config, memberId, noticeId, "login_notice", fetcher);
+}
+
+export async function deliverApprovalNotice(store, config, memberId, noticeId, fetcher = fetch) {
+  return deliverMemberNotice(store, config, memberId, noticeId, "approval_notice", fetcher);
+}
+
+async function deliverMemberNotice(store, config, memberId, noticeId, field, fetcher) {
   if (!config.discordBotToken) return;
   const claimed = await store.update((state) => {
-    const notice = state.members[memberId]?.login_notice;
+    const member = state.members[memberId], notice = member?.[field];
     if (notice?.id !== noticeId || notice.status !== "pending") return false;
+    if (field === "approval_notice" && member.status !== "approved") { notice.status = "cancelled"; return false; }
     notice.status = "sending"; return true;
   });
   if (!claimed) return;
-  const finish = (status) => store.update((state) => {
-    const notice = state.members[memberId]?.login_notice;
-    if (notice?.id === noticeId) notice.status = status;
+  const finish = (status, details = {}) => store.update((state) => {
+    const notice = state.members[memberId]?.[field];
+    if (notice?.id === noticeId) Object.assign(notice, { status }, details);
   });
+  const failed = async (response) => {
+    let data; try { data = await response.json(); } catch { /* Do not store raw Discord responses. */ }
+    const details = { httpStatus: response.status, ...(Number.isInteger(data?.code) ? { errorCode: data.code } : {}) };
+    if (response.status === 429) details.retryAt = Date.now() + Math.min(86400, Math.max(1, Number(data?.retry_after) || 60)) * 1000;
+    await finish(response.status === 403 ? "blocked" : messageStarted && response.status >= 500 ? "uncertain" : "failed", details);
+  };
   const api = (path, body) => fetcher(`https://discord.com/api/v10${path}`, {
     method: "POST", signal: AbortSignal.timeout(10000), redirect: "error",
     headers: { authorization: `Bot ${config.discordBotToken}`, "content-type": "application/json" }, body: JSON.stringify(body),
@@ -22,15 +37,17 @@ export async function deliverLoginNotice(store, config, memberId, noticeId, fetc
   let messageStarted = false;
   try {
     const opened = await api("/users/@me/channels", { recipient_id: memberId });
-    if (!opened.ok) { await finish(opened.status === 403 ? "blocked" : "failed"); return; }
+    if (!opened.ok) { await failed(opened); return; }
     const channel = await opened.json();
     if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); return; }
+    const current = (await store.read()).members[memberId];
+    if (current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
     messageStarted = true;
     const sent = await api(`/channels/${channel.id}/messages`, {
-      content: `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${config.origin}/reports/account`,
+      content: field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${config.origin}/reports\n구독·알림 설정: ${config.origin}/reports/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${config.origin}/reports/account`,
       flags: 4, allowed_mentions: { parse: [] }, nonce: digest(noticeId).slice(0, 25), enforce_nonce: true,
     });
-    if (!sent.ok) { await finish(sent.status === 403 ? "blocked" : sent.status >= 500 ? "uncertain" : "failed"); return; }
+    if (!sent.ok) { await failed(sent); return; }
     const result = await sent.json();
     await finish(/^\d{17,20}$/.test(result.id || "") ? "sent" : "uncertain");
   } catch { await finish(messageStarted ? "uncertain" : "failed"); }

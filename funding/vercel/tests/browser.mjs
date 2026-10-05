@@ -66,6 +66,18 @@ try {
   assert.equal((await member.goto(`${app.config.origin}/reports/${today}/html`)).status(), 403);
   await admin.goto(`${app.config.origin}/reports/admin`);
   await admin.getByRole("button", { name: "구독 승인", exact: true }).click();
+  await app.work.at(-1)();
+  await member.goto(`${app.config.origin}/reports/account`);
+  await member.getByText("구독 승인 안내: 전송했습니다.", { exact: false }).waitFor();
+  await app.store.update((s) => { s.members[user].approval_notice.createdAt = 0; });
+  await member.getByRole("button", { name: "확인 DM 다시 받기", exact: true }).click();
+  await member.getByText("확인 DM을 요청했습니다.", { exact: false }).waitFor();
+  await app.work.at(-1)();
+  await member.getByRole("link", { name: "전송 상태 새로고침", exact: true }).click();
+  await member.getByText("구독 승인 안내: 전송했습니다.", { exact: false }).waitFor();
+  await member.setViewportSize({ width: 390, height: 844 });
+  assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await member.screenshot({ path: path.join(output, "approval-confirmation-mobile.png"), fullPage: true });
   assert.equal((await member.goto(`${app.config.origin}/reports/${today}/html`)).status(), 200);
   await admin.getByRole("button", { name: "승인 취소", exact: true }).click();
   assert.equal((await member.goto(`${app.config.origin}/reports/${today}/html`)).status(), 403);
@@ -93,5 +105,5 @@ try {
   await restored.getByRole("button", { name: "구독 설정 저장" }).waitFor();
   await restored.getByRole("button", { name: "로그아웃", exact: true }).click();
   await restored.getByRole("link", { name: "Discord로 로그인하고 구독 신청" }).waitFor();
-  console.log("Browser passed: HTML file selection, preview, sandboxed scripts/forms, upload, date URL, archive, mobile, member approval and raw HTML revocation. Mock private storage only; no deployment or real messages.");
+  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM status/retry and revocation. Mock private storage only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

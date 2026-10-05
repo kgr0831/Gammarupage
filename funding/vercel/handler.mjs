@@ -5,7 +5,7 @@ import { check, digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 import { briefConfig } from "./config.mjs";
 import { BriefStore, PrivateBlobFiles } from "./storage.mjs";
-import { deliverBriefLinks, deliverLoginNotice } from "./notify.mjs";
+import { deliverBriefLinks, deliverLoginNotice, deliverApprovalNotice } from "./notify.mjs";
 import * as view from "./views.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -57,6 +57,12 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       headers.append("Set-Cookie", cookie(cookieName, token, age));
     }
     const scheduleDM = () => after(() => deliverBriefLinks(store, config, fetcher, 210000).catch(() => console.error("Report notifications require review.")));
+    const scheduleApproval = (id, noticeId) => after(() => deliverApprovalNotice(store, config, id, noticeId, fetcher).catch(() => console.error("Approval notification requires review.")));
+    const approvalNotice = (m, id, retry = false) => {
+      const prior = m.approval_notice;
+      if (retry) check(!prior || Date.now() >= Math.max(prior.createdAt + 60000, prior.retryAt || 0), "확인 DM을 요청한 지 얼마 되지 않았습니다. 잠시 후 다시 시도해 주세요.", 429);
+      m.approval_notice = { id, createdAt: Date.now(), status: config.discordBotToken ? "pending" : "unavailable" };
+    };
     try {
       check(config.configured, "보고서 저장소와 로그인 설정을 준비 중입니다.", 503);
       const url = new URL(request.url); const pathname = url.pathname.replace(/\/$/, "");
@@ -129,10 +135,17 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (notice) after(() => deliverLoginNotice(store, config, user.id, notice, fetcher).catch(() => console.error("Login notification requires review.")));
         return redirect("/reports/account?welcome=1");
       }
+      if (pathname === "/reports/account/confirmation" && request.method === "POST") {
+        check(member?.status === "approved", "승인된 구독자만 확인 DM을 받을 수 있습니다.", 403);
+        const noticeId = randomBytes(16).toString("hex");
+        await store.update((s) => { const m = s.members[member.id]; check(m?.status === "approved", "구독 상태가 변경되었습니다.", 409); approvalNotice(m, noticeId, true); });
+        scheduleApproval(member.id, noticeId);
+        return redirect("/reports/account?confirmation=1");
+      }
       if (["/reports/account", "/reports/subscription", "/reports/unsubscribe"].includes(pathname)) {
         if (!member && request.method === "GET") return admin ? redirect("/reports/admin") : send(view.login("member", oauthConfigured));
         check(member, "Discord 로그인이 필요합니다.", 401);
-        if (pathname === "/reports/account" && request.method === "GET") return send(view.account(member, url.searchParams.get("welcome") === "1", url.searchParams.get("saved") === "1"));
+        if (pathname === "/reports/account" && request.method === "GET") return send(view.account(member, url.searchParams.get("welcome") === "1", url.searchParams.get("saved") === "1", config.discordApplicationId, url.searchParams.get("confirmation") === "1"));
         check(request.method === "POST", "허용되지 않는 요청입니다.", 405);
         const form = await formData(request);
         await store.update((s) => {
@@ -151,14 +164,17 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (!admin && request.method === "GET") return redirect("/reports/login/admin");
         check(admin, "관리자 권한이 필요합니다.", 403);
         if (pathname === "/reports/admin" && request.method === "GET") return send(view.admin(Object.values(data.members), Object.values(data.deliveries)));
-        const match = pathname.match(/^\/reports\/admin\/(\d{17,20})\/(approve|reject|revoke)$/);
+        const match = pathname.match(/^\/reports\/admin\/(\d{17,20})\/(approve|reject|revoke|notify)$/);
         check(match && request.method === "POST", "요청을 찾을 수 없습니다.", 404);
+        const noticeId = randomBytes(16).toString("hex");
         await store.update((s) => {
           const m = s.members[match[1]], operation = match[2];
-          check(m && m.status === (operation === "revoke" ? "approved" : "pending"), "구독 상태가 변경되었습니다. 새로고침해 주세요.", 409);
-          m.status = { approve: "approved", reject: "rejected", revoke: "revoked" }[operation];
+          check(m && m.status === (["revoke", "notify"].includes(operation) ? "approved" : "pending"), "구독 상태가 변경되었습니다. 새로고침해 주세요.", 409);
+          if (operation !== "notify") m.status = { approve: "approved", reject: "rejected", revoke: "revoked" }[operation];
+          if (["approve", "notify"].includes(operation)) approvalNotice(m, noticeId, operation === "notify");
           if (m.status !== "approved") for (const d of Object.values(s.deliveries)) if (d.memberId === m.id && d.status === "pending") d.status = "cancelled";
         });
+        if (["approve", "notify"].includes(match[2])) scheduleApproval(match[1], noticeId);
         return redirect("/reports/admin");
       }
       if (/^\/reports\/(upload(?:\/|$)|notify$|design$|context$)/.test(pathname)) {
