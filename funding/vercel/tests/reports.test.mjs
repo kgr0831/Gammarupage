@@ -5,7 +5,7 @@ import { briefConfig } from "../config.mjs";
 import { setup, today, sampleHtml } from "./helpers.mjs";
 import { BriefStore, PrivateBlobFiles } from "../storage.mjs";
 import { digest } from "../../schema.mjs";
-import { deliverBriefLinks } from "../notify.mjs";
+import { deliverBriefLinks, formatBriefMessage } from "../notify.mjs";
 import { archive } from "../views.mjs";
 
 test("configured eight-character admin passwords work and rotation invalidates old credentials and sessions", async () => {
@@ -118,7 +118,7 @@ test("OAuth state is cookie-bound and consumed once; admin password sessions rot
   assert.equal((await app.request("/reports/admin", admin)).status, 303);
 });
 
-test("DM delivery uses only the report URL, skips opt-outs, persists ambiguous outcomes and rate limits", async () => {
+test("DM includes the published title and summary, skips opt-outs, persists ambiguous outcomes and rate limits", async () => {
   const app = setup({ dmEnabled: true }); await app.member(); await app.member("100000000000000002", "approved", false);
   await app.store.publish(await app.stage(), today);
   let calls = 0; const requests = [];
@@ -128,11 +128,29 @@ test("DM delivery uses only the report URL, skips opt-outs, persists ambiguous o
   };
   await deliverBriefLinks(app.store, app.config, fake);
   await deliverBriefLinks(app.store, app.config, fake);
-  assert.equal(calls, 2); assert.equal(requests[1].body.content, `${app.config.origin}/reports/${today}`); assert.equal(requests[1].body.flags, 4);
+  assert.equal(calls, 2);
+  const message = requests[1].body;
+  assert.ok(message.content.startsWith(`📰 겜마루 데일리 브리핑 · ${today.replaceAll("-", ".")}`));
+  assert.ok(message.content.includes(`**${today} 검증용 보고서**`));
+  assert.ok(message.content.includes("실제 지원 공고가 아닌 테스트 자료입니다."));
+  assert.ok(message.content.endsWith(`${app.config.origin}/reports/${today}`));
+  assert.equal(message.flags, 4); assert.deepEqual(message.allowed_mentions, { parse: [] });
   await app.store.update((s) => { Object.values(s.deliveries)[0].status = "pending"; });
   await deliverBriefLinks(app.store, app.config, async (url) => { if (String(url).endsWith("messages")) throw Error("lost response"); return Response.json({ id: "200000000000000001" }); });
   assert.equal(Object.values((await app.store.read()).deliveries)[0].status, "uncertain");
   await app.store.update((s) => { Object.values(s.deliveries)[0].status = "pending"; });
   await deliverBriefLinks(app.store, app.config, async () => Response.json({ retry_after: 10 }, { status: 429 }));
   const d = Object.values((await app.store.read()).deliveries)[0]; assert.equal(d.status, "pending"); assert.ok(d.retryAt > Date.now());
+});
+
+test("DM keeps long Unicode summaries bounded, escapes formatting and handles empty summaries", () => {
+  const origin = "https://gammarupage.vercel.app";
+  const report = { date: "2026-10-05", title: "  새 *후원*\n정보 ", summary: "🕹️".repeat(250) };
+  const message = formatBriefMessage(report, origin);
+  assert.ok(message.includes("**새 \\*후원\\* 정보**"));
+  const abstract = message.split("\n\n")[2];
+  assert.equal(Array.from(abstract).length, 300); assert.ok(abstract.endsWith("…"));
+  assert.ok(message.isWellFormed()); assert.ok(message.length < 2000);
+  assert.ok(message.endsWith(`${origin}/reports/2026-10-05`));
+  assert.ok(formatBriefMessage({ ...report, summary: " \n " }, origin).includes("보고서에서 확인하세요."));
 });

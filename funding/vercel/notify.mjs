@@ -1,6 +1,18 @@
 import { digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 
+function briefText(value, limit) {
+  const chars = Array.from(value.trim().replace(/\s+/g, " "));
+  const clipped = chars.length > limit ? `${chars.slice(0, limit - 1).join("")}…` : chars.join("");
+  return clipped.replace(/[\\`*_~|\[\]()<>#]/g, "\\$&");
+}
+
+export function formatBriefMessage(report, origin) {
+  const title = briefText(report.title, 150);
+  const summary = briefText(report.summary || "", 300) || "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.";
+  return `📰 겜마루 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}/reports/${report.date}`;
+}
+
 // A transactional login notice is independent of the daily newsletter switch.
 // Claim once in Blob so duplicate callbacks/workers cannot send the same notice twice.
 export async function deliverLoginNotice(store, config, memberId, noticeId, fetcher = fetch) {
@@ -94,11 +106,12 @@ export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs
       if (!opened.ok) { await finish(opened.status === 403 ? "blocked" : "failed"); continue; }
       const channel = await opened.json();
       if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); continue; }
-      const current = (await store.read()).members[claimed.memberId];
-      if (current?.status !== "approved" || !current.dm_opt_in || today !== seoulClock().date) { await finish("cancelled"); continue; }
+      const data = await store.read(), current = data.members[claimed.memberId];
+      const report = data.reports.find((r) => r.date === claimed.date);
+      if (!report || current?.status !== "approved" || !current.dm_opt_in || today !== seoulClock().date) { await finish("cancelled"); continue; }
       messageStarted = true;
       const sent = await api(`/channels/${channel.id}/messages`, {
-        content: `${config.origin}/reports/${today}`, flags: 4, allowed_mentions: { parse: [] }, nonce: digest(claimed.key).slice(0, 25), enforce_nonce: true,
+        content: formatBriefMessage(report, config.origin), flags: 4, allowed_mentions: { parse: [] }, nonce: digest(claimed.key).slice(0, 25), enforce_nonce: true,
       });
       if (await rateLimited(sent)) return;
       if (!sent.ok) { await finish(sent.status === 403 ? "blocked" : sent.status >= 500 ? "uncertain" : "failed"); continue; }

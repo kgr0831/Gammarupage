@@ -32,7 +32,7 @@ try {
   await admin.getByRole("link", { name: "HTML 업로드", exact: true }).click();
   const hostile = sampleHtml.replace("</body>", '<script>parent.document.body.dataset.injected="yes";window.scriptRan=true</script><form action="/reports/logout" method="post"><button id="bad-form">bad form</button></form></body>');
   await admin.getByLabel("보고서 제목", { exact: true }).fill("겜마루 후원·운영자금 일일 보고 — 검증용");
-  await admin.getByLabel("목록에 표시할 요약").fill("업로드와 보관함 화면을 확인하는 가상 보고서입니다.");
+  await admin.getByLabel("목록과 DM에 표시할 요약").fill("업로드와 보관함 화면을 확인하는 가상 보고서입니다.");
   await admin.getByLabel("HTML 파일", { exact: true }).setInputFiles({ name: "brief.html", mimeType: "text/html", buffer: Buffer.from(hostile) });
   await admin.getByRole("button", { name: "HTML 미리보기", exact: true }).click();
   await admin.frameLocator("iframe").getByRole("heading", { name: "가상 보고서 · 실제 공고 아님" }).waitFor();
