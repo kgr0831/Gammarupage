@@ -22,9 +22,14 @@ async function publish(app, stateVersion = 0) {
 
 test("personal config fails closed for malformed IDs and disables the existing channel target", () => {
   const request = new Request("https://example.org/reports");
-  const env = { REPORTS_SITE_URL: "https://example.org", REPORTS_PERSONAL_OWNER_ID: owner, DISCORD_REPORT_CHANNEL_ID: channel };
+  const env = { REPORTS_SITE_URL: "https://example.org", REPORTS_SERVICE: "personal", REPORTS_PERSONAL_OWNER_ID: owner, DISCORD_REPORT_CHANNEL_ID: channel };
   assert.equal(briefConfig(request, env).discordReportChannelId, "");
   assert.throws(() => briefConfig(request, { ...env, REPORTS_PERSONAL_OWNER_ID: "invalid" }));
+  assert.equal(briefConfig(request, { ...env, FUNDING_ADMIN_TOKEN: "test-password", REPORTS_PERSONAL_OWNER_ID: "" }).configured, false);
+  const club = briefConfig(request, { ...env, REPORTS_SERVICE: "club" });
+  assert.equal(club.personalOwnerId, "");
+  assert.equal(club.discordReportChannelId, channel);
+  assert.equal(briefConfig(request, { ...env, REPORTS_SERVICE: undefined }).personalOwnerId, "");
 });
 
 test("previously approved subscribers cannot read personal HTML, mutate progress, or request notices", async () => {

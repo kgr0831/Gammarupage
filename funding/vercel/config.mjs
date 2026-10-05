@@ -6,10 +6,13 @@ export function briefConfig(request, env = process.env) {
   if (origin && (origin.pathname !== "/" || origin.username || origin.password || origin.search || origin.hash || (origin.protocol !== "https:" && !local))) throw new Error("Invalid REPORTS_SITE_URL");
   const token = env.FUNDING_ADMIN_TOKEN || "";
   const publisherToken = env.FUNDING_PUBLISHER_TOKEN || "";
-  const personalOwnerId = (env.REPORTS_PERSONAL_OWNER_ID || "").trim();
+  const service = env.REPORTS_SERVICE || "club";
+  if (!["club", "personal"].includes(service)) throw new Error("Invalid REPORTS_SERVICE");
+  const personalOwnerId = service === "personal" ? (env.REPORTS_PERSONAL_OWNER_ID || "").trim() : "";
   if (personalOwnerId && !/^\d{17,20}$/.test(personalOwnerId)) throw new Error("Invalid REPORTS_PERSONAL_OWNER_ID");
   return {
-    origin: origin?.origin || "", configured: !!origin && token.length >= 8,
+    origin: origin?.origin || "", configured: !!origin && token.length >= 8 && (service !== "personal" || !!personalOwnerId),
+    service,
     secure: origin?.protocol === "https:", token,
     adminUsername: env.FUNDING_ADMIN_USERNAME || "admin",
     publisherToken: publisherToken.length >= 32 && publisherToken !== token ? publisherToken : "",

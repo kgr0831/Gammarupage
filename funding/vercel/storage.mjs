@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
 
-const INDEX = "gammaru/briefs/index-v1.json";
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
 function queueChannel(state, date, channelId) {
   check(/^\d{17,20}$/.test(channelId), "보고서 채널 설정을 확인해 주세요.", 503);
@@ -42,9 +41,14 @@ export class PrivateBlobFiles {
 }
 
 export class BriefStore {
-  constructor(files) { this.files = files; }
+  constructor(files, namespace = "gammaru/briefs") {
+    if (!["gammaru/briefs", "personal/briefs"].includes(namespace)) throw new Error("Invalid report namespace");
+    this.files = files;
+    this.namespace = namespace;
+    this.index = `${namespace}/index-v1.json`;
+  }
   async snapshot() {
-    const saved = await this.files.read(INDEX);
+    const saved = await this.files.read(this.index);
     const state = saved ? JSON.parse(saved.text) : empty();
     check(state.version === 1 && Array.isArray(state.reports), "저장소 형식을 확인해 주세요.", 503);
     state.opportunities ??= {};
@@ -58,7 +62,7 @@ export class BriefStore {
       const now = Date.now();
       for (const table of [state.sessions, state.oauth, state.attempts]) for (const [key, row] of Object.entries(table)) if (row.expires < now) delete table[key];
       const result = change(state); // Pure synchronous changes: no network effects inside retries.
-      try { await this.files.write(INDEX, JSON.stringify(state), etag); return result; }
+      try { await this.files.write(this.index, JSON.stringify(state), etag); return result; }
       catch (error) { if (!error.conflict) throw error; }
     }
     check(false, "다른 변경이 처리 중입니다. 잠시 후 다시 시도해 주세요.", 409);
@@ -70,12 +74,12 @@ export class BriefStore {
     check(typeof input.html === "string" && Buffer.byteLength(input.html) <= 2 * 1024 * 1024 && /<html[\s>]/i.test(input.html) && /<body[\s>]/i.test(input.html), "UTF-8 형식의 완성된 HTML 파일(최대 2MB)이 필요합니다.");
     const id = randomUUID();
     const draft = { ...input, title: input.title.trim(), manifest: manifestFromHtml(input.html), id, owner, hash: digest(input.html), expires: Date.now() + 1800000 };
-    await this.files.write(`gammaru/briefs/drafts/${id}.json`, JSON.stringify(draft));
+    await this.files.write(`${this.namespace}/drafts/${id}.json`, JSON.stringify(draft));
     return draft;
   }
   async draft(id, owner) {
     check(/^[a-f0-9-]{36}$/.test(id || ""), "미리보기를 찾을 수 없습니다.", 404);
-    const saved = await this.files.read(`gammaru/briefs/drafts/${id}.json`);
+    const saved = await this.files.read(`${this.namespace}/drafts/${id}.json`);
     check(saved, "미리보기를 찾을 수 없습니다.", 404);
     const draft = JSON.parse(saved.text);
     check(draft.owner === owner && draft.expires > Date.now(), "이 로그인에서 만든 미리보기가 아니거나 만료되었습니다.", 403);
@@ -84,8 +88,9 @@ export class BriefStore {
   async publish(draft, today, channelId = "", personalOwnerId = "") {
     const manifest = manifestFromHtml(draft.html);
     check(!personalOwnerId || manifest?.audience === "personal", "최신 개인 보고서 지침에 맞게 audience: personal과 분야 정보를 넣어 다시 미리보기해 주세요.", 409);
+    check(personalOwnerId || manifest?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.", 409);
     if (personalOwnerId) channelId = "";
-    const htmlPath = `gammaru/briefs/html/${draft.date}/${draft.hash}.html`;
+    const htmlPath = `${this.namespace}/html/${draft.date}/${draft.hash}.html`;
     // Immutable content first; only a committed index entry makes it visible or queues notifications.
     try { await this.files.write(htmlPath, draft.html); }
     catch (error) { if (!error.conflict) throw error; }
@@ -126,6 +131,7 @@ export class BriefStore {
     });
   }
   async html(report) {
+    check(report.path.startsWith(`${this.namespace}/html/`) && !report.path.includes(".."), "다른 서비스의 보고서는 읽을 수 없습니다.", 403);
     const saved = await this.files.read(report.path);
     check(saved && digest(saved.text) === report.hash, "보고서 파일을 확인하지 못했습니다.", 502);
     return saved.text;

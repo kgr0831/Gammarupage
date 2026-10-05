@@ -44,7 +44,7 @@ function userProfile(user) {
 export function createBriefHandler({ config: fixedConfig, store: fixedStore, fetch: fetcher = fetch, after = () => {}, now = () => new Date() } = {}) {
   return async function handle(request) {
     const config = fixedConfig || briefConfig(request);
-    const store = fixedStore || new BriefStore(new PrivateBlobFiles(config.blobToken));
+    const store = fixedStore || new BriefStore(new PrivateBlobFiles(config.blobToken), config.personalOwnerId ? "personal/briefs" : "gammaru/briefs");
     const headers = new Headers(security);
     const send = (html, status = 200, mime = "text/html; charset=utf-8") => { headers.set("Content-Type", mime); return new Response(html, { status, headers }); };
     const redirect = (target) => { headers.set("Location", target); return new Response(null, { status: 303, headers }); };
@@ -61,6 +61,12 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       headers.append("Set-Cookie", cookie(cookieName, token, age));
     }
     const personal = !!config.personalOwnerId;
+    const sourceFiles = {
+      instructions: () => personal ? readFile(path.join(process.cwd(), "docs/dots-personal-brief.md"), "utf8") : readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"),
+      design: () => personal ? readFile(path.join(process.cwd(), "docs/personal-Design.md"), "utf8") : readFile(path.join(process.cwd(), "Design.md"), "utf8"),
+      context: () => personal ? readFile(path.join(process.cwd(), "docs/personal-brief-profile.md"), "utf8") : readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8"),
+    };
+    const source = async (name) => (await sourceFiles[name]()).replaceAll("{{REPORTS_SITE_URL}}", config.origin);
     const channelId = reportChannel(config);
     const transportReady = notificationTransportReady(config);
     const notificationsEnabled = transportReady && (channelId ? /^\d{17,20}$/.test(channelId) : config.dmEnabled);
@@ -203,17 +209,13 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (pathname === "/reports/upload" && request.method === "GET") {
           if (url.searchParams.get("guide") === "1") {
             const [instructions, design, context] = await Promise.all([
-              readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"),
-              readFile(path.join(process.cwd(), "Design.md"), "utf8"),
-              personal ? readFile(path.join(process.cwd(), "docs/personal-brief-profile.md"), "utf8") : readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8"),
+              source("instructions"), source("design"), source("context"),
             ]);
             return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role));
           }
           return send(view.upload(today, session.role, data.reports.find((r) => r.date === url.searchParams.get("published")), Object.values(data.deliveries), notificationsEnabled, channelId));
         }
-        if (pathname === "/reports/design" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "Design.md"), "utf8"), 200, "text/plain; charset=utf-8");
-        if (pathname === "/reports/context" && request.method === "GET") return send(await (personal ? readFile(path.join(process.cwd(), "docs/personal-brief-profile.md"), "utf8") : readFile(path.join(process.cwd(), "gammaruInfo.md"), "utf8")), 200, "text/plain; charset=utf-8");
-        if (pathname === "/reports/instructions" && request.method === "GET") return send(await readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"), 200, "text/plain; charset=utf-8");
+        if (Object.hasOwn(sourceFiles, pathname.slice("/reports/".length)) && request.method === "GET") return send(await source(pathname.slice("/reports/".length)), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
           if (channelId) await store.queueChannelReport(today, channelId);
           scheduleNotifications(); return redirect("/reports/upload");
@@ -229,6 +231,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           let html;
           try { html = new TextDecoder("utf-8", { fatal: true }).decode(await file.arrayBuffer()); } catch { check(false, "HTML을 UTF-8 인코딩으로 저장한 뒤 올려 주세요."); }
           check(!personal || manifestFromHtml(html)?.audience === "personal", "개인 보고서 지침의 audience: personal과 category를 포함해 주세요.");
+          check(personal || manifestFromHtml(html)?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.");
           const draft = await store.stage({ date: textField(form, "date"), title: textField(form, "title"), summary: textField(form, "summary"), html, notify: textField(form, "notify") === "yes" }, sessionHash, today);
           return send(view.preview(draft, session.role));
         }
