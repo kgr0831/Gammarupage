@@ -1,6 +1,6 @@
 import { digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
-import { reportChannel, allowedMember, reportRecipient } from "./access.mjs";
+import { reportChannel, allowedMember, reportRecipient, isPersonal } from "./access.mjs";
 
 function briefText(value, limit) {
   const chars = Array.from(value.trim().replace(/\s+/g, " "));
@@ -8,16 +8,16 @@ function briefText(value, limit) {
   return clipped.replace(/[\\`*_~|\[\]()<>#]/g, "\\$&");
 }
 
-export function formatBriefMessage(report, origin) {
+export function formatBriefMessage(report, origin, basePath = "/reports") {
   const title = briefText(report.title, 150);
   const personal = report.audience === "personal";
-  const summary = briefText(report.summary || "", 300) || (personal ? "오늘의 공모전·미국 주식·ETF·채용 정보를 확인하세요." : "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.");
-  return `📰 ${personal ? "개인" : "겜마루"} 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}/reports/${report.date}`;
+  const summary = briefText(report.summary || "", 300) || (personal ? "오늘의 개발·AI·IT 공모전과 채용 정보를 확인하세요." : "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.");
+  return `📰 ${personal ? "개인" : "겜마루"} 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}${basePath}/${report.date}`;
 }
 
-export function formatMemberNotice(field, origin, personal = false) {
-  if (personal) return `개인 보고서 ${field === "approval_notice" ? "이용이 승인" : "로그인이 완료"}되었습니다.\n보고서: ${origin}/reports\nDM 수신 설정: ${origin}/reports/account`;
-  return field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${origin}/reports\n구독·알림 설정: ${origin}/reports/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${origin}/reports/account`;
+export function formatMemberNotice(field, origin, personal = false, basePath = "/reports") {
+  if (personal) return `개인 데일리 스크럼 ${field === "approval_notice" ? "확인 DM입니다" : "Discord 연결이 완료되었습니다"}.\n새 보고서의 요약과 링크는 이 계정의 DM으로 받습니다.\n보고서: ${origin}${basePath}\nDM 수신 설정: ${origin}${basePath}/account`;
+  return field === "approval_notice" ? `겜마루 보고서 구독이 승인되었습니다!\n외부 후원·운영자금·도움되는 정보를 여기에서 확인하세요.\n보고서 목록: ${origin}${basePath}\n구독·알림 설정: ${origin}${basePath}/account` : `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${origin}${basePath}/account`;
 }
 
 // A transactional login notice is independent of the daily newsletter switch.
@@ -34,7 +34,7 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
   if (!config.discordBotToken) return;
   const claimed = await store.update((state) => {
     const member = state.members[memberId], notice = member?.[field];
-    if (!allowedMember(member, config)) return false;
+    if (!allowedMember(member, config, state)) return false;
     if (notice?.id !== noticeId || notice.status !== "pending") return false;
     if (field === "approval_notice" && member.status !== "approved") { notice.status = "cancelled"; return false; }
     notice.status = "sending"; return true;
@@ -60,11 +60,12 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
     if (!opened.ok) { await failed(opened); return; }
     const channel = await opened.json();
     if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); return; }
-    const current = (await store.read()).members[memberId];
-    if (!allowedMember(current, config) || current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
+    const currentState = await store.read();
+    const current = currentState.members[memberId];
+    if (!allowedMember(current, config, currentState) || current?.[field]?.id !== noticeId || (field === "approval_notice" && current.status !== "approved")) { await finish("cancelled"); return; }
     messageStarted = true;
     const sent = await api(`/channels/${channel.id}/messages`, {
-      content: formatMemberNotice(field, config.origin, !!config.personalOwnerId),
+      content: formatMemberNotice(field, config.origin, isPersonal(config), config.basePath),
       flags: 4, allowed_mentions: { parse: [] }, nonce: digest(noticeId).slice(0, 25), enforce_nonce: true,
     });
     if (!sent.ok) { await failed(sent); return; }
@@ -76,7 +77,7 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
 export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs = 45000) {
   const channelId = reportChannel(config);
   if (!config.discordBotToken || (channelId ? !/^\d{17,20}$/.test(channelId) : !config.dmEnabled)) return;
-  const eligible = (row, state) => (!config.personalOwnerId || state.reports.find((r) => r.date === row.date)?.audience === "personal") && (channelId ? row.channelId === channelId : !row.channelId && reportRecipient(state.members[row.memberId], config));
+  const eligible = (row, state) => (!isPersonal(config) || state.reports.find((r) => r.date === row.date)?.audience === "personal") && (channelId ? row.channelId === channelId : !row.channelId && reportRecipient(state.members[row.memberId], config, state));
   const end = Date.now() + budgetMs;
   const api = (path, body) => fetcher(`https://discord.com/api/v10${path}`, {
     method: body === undefined ? "GET" : "POST", signal: AbortSignal.timeout(10000), redirect: "error",
@@ -122,7 +123,7 @@ export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs
       if (!report || !eligible(claimed, data) || today !== seoulClock().date) { await finish("cancelled"); continue; }
       messageStarted = true;
       const sent = await api(`/channels/${channel.id}/messages`, {
-        content: formatBriefMessage(report, config.origin), flags: 4, allowed_mentions: { parse: [] }, nonce: digest(claimed.key).slice(0, 25), enforce_nonce: true,
+        content: formatBriefMessage(report, config.origin, config.basePath), flags: 4, allowed_mentions: { parse: [] }, nonce: digest(claimed.key).slice(0, 25), enforce_nonce: true,
       });
       if (await rateLimited(sent)) return;
       if (!sent.ok) { await finish(sent.status === 403 ? "blocked" : sent.status >= 500 ? "uncertain" : "failed"); continue; }

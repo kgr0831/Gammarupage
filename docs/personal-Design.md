@@ -70,19 +70,19 @@
 
 `funding/portal/views.mjs`와 `funding/portal/style.css`를 그래픽 참고 템플릿으로 사용한다.
 현재 대상은 `{{REPORTS_SITE_URL}}`이다. dots가 이 문서에 맞는 **완성 HTML 파일**을
-작성한다. UTF-8, 최대 2MB, CSS를 문서 안에 포함한다. `/reports/upload`에서 날짜·제목·요약과
+작성한다. UTF-8, 최대 2MB, CSS를 문서 안에 포함한다. `{{REPORTS_BASE_URL}}/upload`에서 날짜·제목·요약과
 함께 등록하면 Private Blob에 보관되고 `/reports` 목록에 추가된다. 기존 호는 자동 변경하지 않는다.
 
 HTML 본문에는 실행 JavaScript·폼·자동 이동·추적 코드를 넣지 않는다. 아래의 비실행 JSON 데이터만 허용한다. 외부 링크는 공식
 HTTPS와 `target="_blank" rel="noopener noreferrer"`를 사용한다. 회원 개인정보와 비공개 실행
 초안을 포함하지 않는다. 사이트가 iframe sandbox와 CSP로 파일의 스크립트·폼 실행을 차단한다.
 
-`/reports/YYYY-MM-DD`와 원본 `/reports/YYYY-MM-DD/html`은 매 요청마다 관리자 또는 승인된 소유자인지 검사한다.
+`{{REPORTS_BASE_URL}}/YYYY-MM-DD`와 원본 `{{REPORTS_BASE_URL}}/YYYY-MM-DD/html`은 매 요청마다 관리자 또는 승인된 소유자인지 검사한다.
 공개 메뉴·사이트맵·정적 export에 보고서를 넣지 않는다. 검색 차단만으로 권한 검사를 대신하지 않는다.
 
 ## 저장되는 진행 항목 — HTML 안에 포함
 
-매일 `/reports/research-state`에서 이전 보고 목록과 최신 상태·메모를 읽는다. 신규 정보와
+매일 `{{REPORTS_BASE_URL}}/research-state`에서 이전 보고 목록과 최신 상태·메모를 읽는다. 신규 정보와
 `new`(검토 전)·`deferred`(보류)·`in_progress`(진행 중) 항목을 조사한다.
 `completed`(진행 완료)·`dismissed`(안함)는 새 변화가 있을 때만 다시 보고한다.
 

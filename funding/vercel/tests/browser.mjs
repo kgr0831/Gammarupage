@@ -5,6 +5,8 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { setup, sampleHtml, today } from "./helpers.mjs";
+import { createSiteHandler } from "../router.mjs";
+import { BriefStore } from "../storage.mjs";
 
 const app = setup({}, { fetch: async (url) => String(url).endsWith("token") ? Response.json({ access_token: "test-only-transient", token_type: "Bearer" }) : Response.json({ id: "100000000000000002", username: "browser-member", global_name: "브라우저 검증 회원", avatar: null }) });
 const server = createServer(async (req, res) => {
@@ -220,5 +222,69 @@ try {
     assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await member.screenshot({ path: path.join(output, `personal-profile-${width}.png`), fullPage: true });
   }
-  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM, channel UI, saved admin/subscriber progress, private personal profile and next-research feedback. Mock private storage only; no deployment or real messages.");
+  app.config.service = "personal";
+  const personalContext = await browser.newContext();
+  const personalPage = await personalContext.newPage();
+  await personalPage.goto(`${app.config.origin}/reports`);
+  await personalPage.getByRole("heading", { name: "개인 로그인", exact: true }).waitFor();
+  await personalPage.getByLabel("아이디", { exact: true }).fill(app.config.adminUsername);
+  await personalPage.getByLabel("비밀번호", { exact: true }).fill(app.config.token);
+  await personalPage.getByRole("button", { name: "로그인", exact: true }).click();
+  await personalPage.getByRole("heading", { name: "내 데일리 스크럼", exact: true }).waitFor();
+  await personalPage.getByRole("link", { name: "Discord 연결하기", exact: true }).click();
+  await personalPage.getByRole("button", { name: "Discord로 로그인하고 연결", exact: true }).click();
+  await personalPage.getByText("Discord 연결을 완료했습니다.", { exact: true }).waitFor();
+  assert.equal((await app.store.read()).personalAccount.discordId, "100000000000000002");
+  for (const width of [1440, 390, 320]) {
+    await personalPage.setViewportSize({ width, height: 900 });
+    assert.equal(await personalPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, "Personal account wraps on mobile");
+    await personalPage.screenshot({ path: path.join(output, `personal-account-${width}.png`), fullPage: true });
+  }
+  await personalPage.getByLabel("새 보고서 요약과 링크를 DM으로 받기", { exact: true }).uncheck();
+  await personalPage.getByRole("button", { name: "알림 설정 저장", exact: true }).click();
+  await personalPage.reload();
+  assert.equal(await personalPage.getByLabel("새 보고서 요약과 링크를 DM으로 받기", { exact: true }).isChecked(), false);
+  await personalPage.getByRole("button", { name: "Discord 연결 해제", exact: true }).click();
+  await personalPage.getByText("아직 연결된 Discord 계정이 없습니다.", { exact: true }).waitFor();
+  await personalContext.close();
+  const mountedStore = new BriefStore(app.files, "personal/briefs");
+  app.handler = createSiteHandler({ env: {
+    REPORTS_SITE_URL: app.config.origin, FUNDING_ADMIN_USERNAME: "club-admin", FUNDING_ADMIN_TOKEN: app.config.token,
+    PERSONAL_ADMIN_USERNAME: "personal-owner", PERSONAL_ADMIN_TOKEN: app.config.publisherToken,
+    PERSONAL_PUBLISHER_TOKEN: "test-publisher-".repeat(4), DISCORD_APPLICATION_ID: app.config.discordApplicationId,
+    DISCORD_CLIENT_SECRET: "mock-client-secret",
+  }, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: user, username: "linked-personal", global_name: "개인 검증 계정" }) });
+  const sharedContext = await browser.newContext(), sharedPage = await sharedContext.newPage();
+  await sharedPage.goto(`${app.config.origin}/reports/login/admin`);
+  await sharedPage.getByLabel("아이디", { exact: true }).fill("club-admin");
+  await sharedPage.getByLabel("비밀번호", { exact: true }).fill(app.config.token);
+  await sharedPage.getByRole("button", { name: "로그인", exact: true }).click();
+  await sharedPage.waitForURL("**/reports/admin");
+  await sharedPage.goto(`${app.config.origin}/personal`);
+  await sharedPage.getByLabel("아이디", { exact: true }).fill("personal-owner");
+  await sharedPage.getByLabel("비밀번호", { exact: true }).fill(app.config.publisherToken);
+  await sharedPage.getByRole("button", { name: "로그인", exact: true }).click();
+  await sharedPage.waitForURL("**/personal");
+  for (const width of [1440, 390, 320]) {
+    await sharedPage.setViewportSize({ width, height: 950 });
+    assert.equal(await sharedPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await sharedPage.screenshot({ path: path.join(output, `personal-mounted-${width}.png`), fullPage: true });
+  }
+  await sharedPage.getByRole("link", { name: "Discord 연결하기", exact: true }).click();
+  await sharedPage.getByRole("button", { name: "Discord로 로그인하고 연결", exact: true }).click();
+  await sharedPage.waitForURL("**/personal/account?welcome=1");
+  await sharedPage.getByText("Discord 연결을 완료했습니다.", { exact: true }).waitFor();
+  assert.equal((await (await sharedPage.request.get(`${app.config.origin}/reports/session`)).json()).authenticated, true);
+  await sharedPage.goto(`${app.config.origin}/personal/profile`);
+  await sharedPage.getByLabel("기술과 경험", { exact: true }).fill("Mounted private browser fixture");
+  await sharedPage.getByRole("button", { name: "조사 조건 저장", exact: true }).click();
+  await sharedPage.waitForURL("**/personal/profile?saved=1");
+  await sharedPage.goto(`${app.config.origin}/personal/upload?guide=1`);
+  assert.match(await sharedPage.locator("#context pre").innerText(), /Mounted private browser fixture/);
+  assert.ok((await sharedPage.locator("#instructions pre").innerText()).includes(`${app.config.origin}/personal/upload`));
+  await sharedPage.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
+  await sharedPage.waitForURL("**/personal/upload");
+  assert.equal((await mountedStore.read()).personalAccount.discordId, user);
+  await sharedContext.close();
+  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

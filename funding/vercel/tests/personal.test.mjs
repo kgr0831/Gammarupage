@@ -25,7 +25,7 @@ test("personal config fails closed for malformed IDs and disables the existing c
   const env = { REPORTS_SITE_URL: "https://example.org", REPORTS_SERVICE: "personal", REPORTS_PERSONAL_OWNER_ID: owner, DISCORD_REPORT_CHANNEL_ID: channel };
   assert.equal(briefConfig(request, env).discordReportChannelId, "");
   assert.throws(() => briefConfig(request, { ...env, REPORTS_PERSONAL_OWNER_ID: "invalid" }));
-  assert.equal(briefConfig(request, { ...env, FUNDING_ADMIN_TOKEN: "test-password", REPORTS_PERSONAL_OWNER_ID: "" }).configured, false);
+  assert.equal(briefConfig(request, { ...env, FUNDING_ADMIN_TOKEN: "test-password", REPORTS_PERSONAL_OWNER_ID: "" }).configured, true);
   const club = briefConfig(request, { ...env, REPORTS_SERVICE: "club" });
   assert.equal(club.personalOwnerId, "");
   assert.equal(club.discordReportChannelId, channel);

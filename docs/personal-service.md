@@ -1,49 +1,72 @@
-# 개인 데일리 브리핑 — 별도 서비스
+# 개인 데일리 스크럼 — 같은 사이트의 비공개 공간
 
-겜마루 서비스를 유지하면서 개인용 서비스를 별도 Vercel 프로젝트와 주소에 배포한다.
-두 배포는 보고서 엔진을 재사용하지만 데이터·세션·업로드 키·보고 지침·알림 대상을 공유하지 않는다.
+개인 URL은 **https://gammarupage.vercel.app/personal**이다.
+기존 겜마루 랜딩과 `/reports`는 유지하고, 개인 계정으로 로그인해야 `/personal`의 보고서를 볼 수 있다.
+공개 메뉴와 사이트맵에는 개인 페이지 링크를 추가하지 않는다. 주소를 알아도 로그인 없이 자료를 읽을 수 없다.
 
-| 구분 | 겜마루 | 개인 브리핑 |
+## 사용 순서
+
+1. `/personal`에서 지정한 개인 ID/PW로 로그인한다.
+2. 개인 개요의 **Discord 연결하기**를 눌러 알림을 받을 Discord 계정을 연결한다.
+3. `/personal/profile`에서 조사 조건을 확인·수정한다.
+4. 일일 HTML이 발행되면 연결한 Discord 계정의 **DM으로 요약과 링크**를 받는다.
+5. 보고서에서 보류·진행 중·완료·안함을 클릭하면 다음 조사에 반영된다.
+
+개인 로그인은 30일간 Secure·HttpOnly 쿠키로 유지된다. Discord 로그인만으로 개인 보고서 열람 권한을 얻을 수 없다.
+Discord 연결을 해제해도 보고서·조사 조건·진행 기록은 보관된다. 다른 계정 연결 시 이전 계정의 대기 알림은 취소한다.
+같은 계정으로 다시 연결해도 DM 수신 거부 설정은 유지한다. 연결한 계정이 없으면 알림을 보내지 않는다.
+
+## 같은 도메인에서 분리되는 항목
+
+| 구분 | 겜마루 | 개인 데일리 스크럼 |
 | --- | --- | --- |
-| 사이트 | https://gammarupage.vercel.app | 별도 Vercel 프로젝트 주소 |
-| REPORTS_SERVICE | club (기본값) | personal |
-| 수집 | 동아리가 직접 확보할 운영비·현물·장비·공간·단체 서비스 | 개발·AI·IT 공모전·채용 |
-| 열람·진행 상태 변경 | 관리자와 승인된 구독자 | 관리자와 승인된 소유자 |
-| 일일 알림 | 기존 Dishost 봇 → 데일리 스크럼 채널 | 개인 사이트 → 본인 Discord DM |
-| 자료 | Design.md, dots-daily-brief.md, gammaruInfo.md | personal-Design.md, dots-personal-brief.md, personal-brief-profile.md |
-| 저장 경로 | gammaru/briefs/ | personal/briefs/ |
+| 경로 | `/reports` | `/personal` |
+| 열람 | 관리자·승인된 구독자 | 개인 ID/PW 계정 |
+| 저장 경로 | `gammaru/briefs/` | `personal/briefs/` |
+| 쿠키 | `__Host-briefs` | `__Host-personal-briefs` |
+| 조사 | 동아리가 직접 확보할 외부 자원 | 개발·AI·IT 공모전·채용 |
+| 알림 | 기존 Dishost 봇 → 서버 채널 | 웹사이트 → 연결한 계정의 DM |
+| 업로드 키 | `FUNDING_PUBLISHER_TOKEN` | `PERSONAL_PUBLISHER_TOKEN` |
 
-## 개인 배포 설정
+두 공간의 보고서 날짜, 진행 기록, 로그인·업로드 세션, DM 대기열은 서로 공유하지 않는다.
+같은 Private Blob을 사용할 때도 각 공간의 서버만 자신의 저장 경로를 읽는다.
+개인 HTML과 동아리 HTML을 반대쪽에 업로드하면 검증에서 거절한다.
 
-- `REPORTS_SERVICE=personal`, `REPORTS_SITE_URL=개인 사이트 HTTPS 주소`.
-- `REPORTS_PERSONAL_OWNER_ID=소유자의 Discord ID`. 누락하면 서비스는 열리지 않는다.
-- 별도 Private Blob의 `BLOB_READ_WRITE_TOKEN`을 연결한다.
-- 관리자 및 업로드 키를 별도로 발급한다. 실제 값은 비공개 환경변수에만 보관한다.
-- Discord OAuth의 허용 Redirect에 `개인 사이트 주소/reports/auth/callback`을 **추가**한다.
-  기존 겜마루 Redirect는 유지한다.
-- `DISCORD_DELIVERY_MODE=direct`, `DISCORD_DM_ENABLED=true`, `DISCORD_REPORT_CHANNEL_ID`는 비워 둔다.
-  개인용에서 채널 설정이 남아 있어도 본인 DM만 허용한다. 기존 Dishost 설정은 변경하지 않는다.
-- 새 사이트에서는 미리 지정한 소유자가 Discord로 처음 로그인하면 바로 개인 보고서를 열람할 수 있다.
-  다른 Discord 계정은 등록·열람할 수 없다. 이미 해제·취소한 구독은 재로그인만으로 복구되지 않는다.
+## 배포 환경변수
 
-루트 주소는 개인 보고서 목록 `/reports`로 이동한다. 로그인·HTML 업로드·날짜별 보고서 경로는
-겜마루와 같지만 호스트가 다르다. 같은 날짜의 보고서를 각각 발행할 수 있고, 상태·메모·세션도 독립적이다.
-개인 보고서를 동아리 업로드에 넣으면 검증 단계에서 거절한다. 기존 동아리 HTML에는 개인 audience/category를 요구하지 않는다.
+기존 Vercel 프로젝트에 다음 개인 전용 값을 추가한다. 실제 값은 비공개 설정에만 보관한다.
 
-## dots 연결
+- `PERSONAL_ADMIN_USERNAME`: 개인 로그인 ID.
+- `PERSONAL_ADMIN_TOKEN`: 개인 비밀번호, 최소 8자.
+- `PERSONAL_PUBLISHER_TOKEN`: 개인 업로드 전용 키, 관리자와 다른 32자 이상 난수.
+- `PERSONAL_BLOB_READ_WRITE_TOKEN`: 선택 사항. 없으면 기존 Private Blob의 개인 저장 경로를 사용한다.
 
-개인 사이트의 `/reports/login/publisher`에 별도 업로드 키로 로그인한다.
-`/reports/upload?guide=1`에는 해당 사이트 주소를 반영한 개인 지침·프로필·디자인·진행 상태가 나온다.
-동아리 작업은 계속 유지하고 개인 브리핑을 별도 작업으로 등록한다. 개인 예약끼리만 중복을 확인한다.
-실제 첫 개인 발행·DM·예약 저장은 각각 확인한다. 배포만으로 dots 예약이 생기지는 않는다.
+기존 `REPORTS_SITE_URL`, Discord 앱·Client Secret·봇 토큰을 재사용한다.
+`REPORTS_SERVICE`는 `club` 또는 기존 기본값으로 유지한다. `/personal`은 경로에 따라 별도 개인 설정을 사용한다.
+개인 로그인 설정이 없으면 개인 공간만 503으로 차단하며 동아리 서비스는 계속 동작한다.
 
-개인 자격·경력·지역·투자 성향은 미확정이다. [개인 프로필](personal-brief-profile.md)의 조건을 사용한다.
-지원서 제출·자동 매매·팩트챗 자동 대체는 이번 범위에 포함하지 않는다.
+Discord OAuth는 이미 등록된 `/reports/auth/callback`을 재사용한다.
+콜백의 state가 개인 OAuth 쿠키와 일치할 때만 개인 연결 흐름으로 전달하며, 서버에 저장한 일회성 state와
+연결을 시작한 개인 로그인 세션까지 검증한다. 동아리·개인 OAuth를 동시에 시작해도 서로 바꾸지 않는다.
 
-## 비공개 조사 조건
+개인 알림은 서버 채널 설정과 무관하게 DM 전용이며, 기존 Dishost 작업을 변경하지 않는다.
+실제 DM은 사용자가 연결을 마친 뒤 확인한다. 봇과의 공유 서버 및 Discord DM 허용 상태에 따라 수신이 제한될 수 있다.
 
-소유자 또는 관리자가 `/reports/profile`에서 학적·기술·직무·지역·참가 조건을 저장한다.
-이 값은 개인 사이트의 Private Blob에만 저장되며 공개 저장소의 Markdown에는 적지 않는다.
-업로드 계정은 `/reports/context`와 HTML 조사 자료에서 이 조건을 읽을 수 있지만 수정할 수 없다.
-조건이 바뀌면 stateVersion이 증가해 변경 전 조건으로 작성한 보고서가 그대로 발행되지 않는다.
-회원 개인정보를 DM 요약에 복사하지 않는다. 실제 보유 잔고·계좌 정보는 필요하지 않다.
+## 비공개 조사 조건과 dots
+
+주어진 학적·개발 경험·진행 프로젝트·동아리 활동·선호는 개인 저장소의 조사 조건에 보관한다.
+공개 소스·Git 저장소·Discord 요약에 상세 개인 정보를 복사하지 않는다.
+조건을 수정하면 stateVersion이 증가하여 변경 전 조건의 초안을 그대로 발행할 수 없게 한다.
+제공하지 않은 근무 지역·시간·팀 구성 가능 여부·자격은 추정하지 않는다. 트레이딩은 현재 범위에서 제외한다.
+
+개인 dots 작업은 `/personal/login/publisher`에 개인 업로드 키로 로그인한다.
+`/personal/upload?guide=1`에서 최신 지침·디자인·프로필·진행 기록을 읽고 HTML을 발행한다.
+예약은 기존 동아리 작업과 별도로 설정한다. 배포만으로 조사 예약이 생성되지는 않는다.
+첫 실제 발행·DM 전송·예약 저장 여부를 각각 확인한 뒤 동작 여부를 보고한다.
+
+## 로컬 보관본
+
+`npm run personal:dev`는 비공개 `.env.personal`과 `funding/data/personal-local/`을 사용하는 별도 로컬 미리보기다.
+로컬 접속 주소는 `http://127.0.0.1:4320/reports`이며 배포 데이터와 독립적이다.
+최초 실행 시 비공개 `funding/data/personal-profile.json`을 조사 조건에 반영한다.
+로컬 저장소는 개발용 단일 프로세스에서만 사용한다.

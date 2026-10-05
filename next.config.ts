@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   // The live site is on Vercel. Authenticated HTML uploads need request-time routes.
   outputFileTracingIncludes: {
     "/reports/**": ["./funding/portal/style.css", "./Design.md", "./gammaruInfo.md", "./docs/dots-daily-brief.md", "./docs/personal-brief-profile.md", "./docs/dots-personal-brief.md", "./docs/personal-Design.md"],
+    "/personal/**": ["./funding/portal/style.css", "./docs/personal-brief-profile.md", "./docs/dots-personal-brief.md", "./docs/personal-Design.md"],
   },
   outputFileTracingExcludes: {
     "/**": [".env*", "funding/data/**", "funding/.codex/**", "test-results/**"],
