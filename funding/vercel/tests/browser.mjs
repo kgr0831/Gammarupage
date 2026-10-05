@@ -105,5 +105,16 @@ try {
   await restored.getByRole("button", { name: "구독 설정 저장" }).waitFor();
   await restored.getByRole("button", { name: "로그아웃", exact: true }).click();
   await restored.getByRole("link", { name: "Discord로 로그인하고 구독 신청" }).waitFor();
-  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM status/retry and revocation. Mock private storage only; no deployment or real messages.");
+  app.config.discordReportChannelId = "300000000000000001";
+  await admin.goto(`${app.config.origin}/reports/upload`);
+  await admin.getByLabel("목록과 채널에 표시할 요약").waitFor();
+  await admin.getByRole("button", { name: "오늘 보고서 채널 게시·대기 처리" }).waitFor();
+  assert.equal(await admin.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await admin.screenshot({ path: path.join(output, "channel-upload-mobile.png"), fullPage: true });
+  await member.goto(`${app.config.origin}/reports/account`);
+  assert.equal(await member.locator('input[name="dm"]').count(), 0);
+  await member.getByText("일일 보고서의 제목·요약·링크는 Discord 서버 채널에 게시됩니다.", { exact: false }).waitFor();
+  assert.equal(await member.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await member.screenshot({ path: path.join(output, "channel-account-mobile.png"), fullPage: true });
+  console.log("Browser passed: upload, sandbox, archive, persistent OAuth login, mobile, approval, confirmation DM status/retry, revocation and channel notification UI. Mock private storage only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

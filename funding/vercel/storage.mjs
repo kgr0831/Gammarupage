@@ -4,6 +4,14 @@ import { check, digest } from "../schema.mjs";
 
 const INDEX = "gammaru/briefs/index-v1.json";
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
+function queueChannel(state, date, channelId) {
+  check(/^\d{17,20}$/.test(channelId), "보고서 채널 설정을 확인해 주세요.", 503);
+  check(state.reports.some((r) => r.date === date), "오늘 등록된 보고서가 없습니다.", 404);
+  // One report per target channel, independently of the number of subscribers.
+  const key = `${date}:channel:${channelId}`;
+  state.deliveries[key] ||= { date, channelId, status: "pending", retryAt: 0, claimedAt: null };
+  return state.deliveries[key];
+}
 export class PrivateBlobFiles {
   constructor(token) { this.token = token; }
   async read(path) {
@@ -70,9 +78,9 @@ export class BriefStore {
     check(draft.owner === owner && draft.expires > Date.now(), "이 로그인에서 만든 미리보기가 아니거나 만료되었습니다.", 403);
     return draft;
   }
-  async publish(draft, today) {
+  async publish(draft, today, channelId = "") {
     const htmlPath = `gammaru/briefs/html/${draft.date}/${draft.hash}.html`;
-    // Immutable content first; only a committed index entry makes it visible or queues DMs.
+    // Immutable content first; only a committed index entry makes it visible or queues notifications.
     try { await this.files.write(htmlPath, draft.html); }
     catch (error) { if (!error.conflict) throw error; }
     return this.update((state) => {
@@ -83,11 +91,17 @@ export class BriefStore {
       }
       const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: new Date().toISOString() };
       state.reports.push(report);
-      if (draft.date === today && draft.notify) for (const member of Object.values(state.members)) {
-        if (member.status === "approved" && member.dm_opt_in) state.deliveries[`${draft.date}:${member.id}`] = { date: draft.date, memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
+      if (draft.date === today && draft.notify) {
+        if (channelId) queueChannel(state, draft.date, channelId);
+        else for (const member of Object.values(state.members)) {
+          if (member.status === "approved" && member.dm_opt_in) state.deliveries[`${draft.date}:${member.id}`] = { date: draft.date, memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
+        }
       }
       return { report, duplicate: false };
     });
+  }
+  async queueChannelReport(today, channelId) {
+    return this.update((state) => queueChannel(state, today, channelId));
   }
   async html(report) {
     const saved = await this.files.read(report.path);
