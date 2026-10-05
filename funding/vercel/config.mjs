@@ -7,7 +7,7 @@ export function briefConfig(request, env = process.env) {
   const token = env.FUNDING_ADMIN_TOKEN || "";
   const publisherToken = env.FUNDING_PUBLISHER_TOKEN || "";
   return {
-    origin: origin?.origin || "", configured: !!origin && token.length >= 32,
+    origin: origin?.origin || "", configured: !!origin && token.length >= 8,
     secure: origin?.protocol === "https:", token,
     adminUsername: env.FUNDING_ADMIN_USERNAME || "admin",
     publisherToken: publisherToken.length >= 32 && publisherToken !== token ? publisherToken : "",

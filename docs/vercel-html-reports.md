@@ -32,7 +32,7 @@
 | `REPORTS_SITE_URL` | `https://gammarupage.vercel.app` |
 | `BLOB_READ_WRITE_TOKEN` | Private Blob 토큰 |
 | `FUNDING_ADMIN_USERNAME` | 관리자 아이디, 기본 `admin` |
-| `FUNDING_ADMIN_TOKEN` | 기존 비공개 설정의 32자 이상 관리자 비밀번호 |
+| `FUNDING_ADMIN_TOKEN` | 비공개 설정의 8자 이상 관리자 비밀번호 |
 | `FUNDING_PUBLISHER_TOKEN` | 관리자와 다른 32자 이상 업로드 키 |
 | `DISCORD_APPLICATION_ID` | 봇 애플리케이션 ID |
 | `DISCORD_CLIENT_SECRET` | OAuth Client Secret, 봇 토큰과 다름 |

@@ -1,10 +1,33 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { randomBytes } from "node:crypto";
+import { briefConfig } from "../config.mjs";
 import { setup, today, sampleHtml } from "./helpers.mjs";
 import { BriefStore, PrivateBlobFiles } from "../storage.mjs";
 import { digest } from "../../schema.mjs";
 import { deliverBriefLinks } from "../notify.mjs";
 import { archive } from "../views.mjs";
+
+test("configured eight-character admin passwords work and rotation invalidates old credentials and sessions", async () => {
+  const app = setup();
+  const oldPassword = app.config.token;
+  const initial = await app.request("/reports/login/admin", "", { username: "admin", password: oldPassword });
+  assert.equal(initial.status, 303);
+  const oldSession = initial.headers.get("set-cookie").split(";")[0];
+  const password = randomBytes(4).toString("hex");
+  const request = new Request(`${app.config.origin}/reports`);
+  const env = { FUNDING_ADMIN_USERNAME: "admin", FUNDING_ADMIN_TOKEN: password, FUNDING_PUBLISHER_TOKEN: app.config.publisherToken };
+  const updated = briefConfig(request, env);
+  assert.equal(updated.configured, true);
+  assert.equal(briefConfig(request, { ...env, FUNDING_ADMIN_TOKEN: "" }).configured, false);
+  assert.equal(briefConfig(request, { ...env, FUNDING_ADMIN_TOKEN: password.slice(1) }).configured, false);
+  Object.assign(app.config, updated);
+  assert.equal((await app.request("/reports/admin", oldSession)).status, 303);
+  assert.equal((await app.request("/reports/login/admin", "", { username: "admin", password: oldPassword })).status, 401);
+  const login = await app.request("/reports/login/admin", "", { username: "admin", password });
+  assert.equal(login.status, 303);
+  assert.equal((await app.request("/reports/admin", login.headers.get("set-cookie").split(";")[0])).status, 200);
+});
 
 test("HTML upload, preview, publication and archive preserve original file behind authentication", async () => {
   const app = setup(); const cookie = await app.session("publisher");
