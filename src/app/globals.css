@@ -260,6 +260,18 @@ body::after {
   display: none;
 }
 
+.site-nav--member a {
+  min-width: clamp(88px, 10vw, 140px);
+  padding: 0 12px;
+}
+
+.site-nav a.member-link {
+  color: var(--lime);
+  font-family: var(--font-body), sans-serif;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
 .route-enter {
   animation: route-in 560ms var(--ease-game) both;
 }
@@ -1363,6 +1375,7 @@ html.motion-ready .game-card.is-visible {
 
 @media (max-width: 1100px) {
   .site-nav a { min-width: 118px; }
+  .site-nav--member a { min-width: 0; padding-inline: 12px; }
   .hero__stats { width: min(480px, 38vw); }
   .featured-grid,
   .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

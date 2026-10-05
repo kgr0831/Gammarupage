@@ -1,6 +1,41 @@
 import { digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 
+// A transactional login notice is independent of the daily newsletter switch.
+// Claim once in Blob so duplicate callbacks/workers cannot send the same notice twice.
+export async function deliverLoginNotice(store, config, memberId, noticeId, fetcher = fetch) {
+  if (!config.discordBotToken) return;
+  const claimed = await store.update((state) => {
+    const notice = state.members[memberId]?.login_notice;
+    if (notice?.id !== noticeId || notice.status !== "pending") return false;
+    notice.status = "sending"; return true;
+  });
+  if (!claimed) return;
+  const finish = (status) => store.update((state) => {
+    const notice = state.members[memberId]?.login_notice;
+    if (notice?.id === noticeId) notice.status = status;
+  });
+  const api = (path, body) => fetcher(`https://discord.com/api/v10${path}`, {
+    method: "POST", signal: AbortSignal.timeout(10000), redirect: "error",
+    headers: { authorization: `Bot ${config.discordBotToken}`, "content-type": "application/json" }, body: JSON.stringify(body),
+  });
+  let messageStarted = false;
+  try {
+    const opened = await api("/users/@me/channels", { recipient_id: memberId });
+    if (!opened.ok) { await finish(opened.status === 403 ? "blocked" : "failed"); return; }
+    const channel = await opened.json();
+    if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); return; }
+    messageStarted = true;
+    const sent = await api(`/channels/${channel.id}/messages`, {
+      content: `겜마루 로그인이 완료되었습니다.\n구독 상태와 보고서 확인: ${config.origin}/reports/account`,
+      flags: 4, allowed_mentions: { parse: [] }, nonce: digest(noticeId).slice(0, 25), enforce_nonce: true,
+    });
+    if (!sent.ok) { await finish(sent.status === 403 ? "blocked" : sent.status >= 500 ? "uncertain" : "failed"); return; }
+    const result = await sent.json();
+    await finish(/^\d{17,20}$/.test(result.id || "") ? "sent" : "uncertain");
+  } catch { await finish(messageStarted ? "uncertain" : "failed"); }
+}
+
 export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs = 45000) {
   if (!config.dmEnabled || !config.discordBotToken) return;
   const end = Date.now() + budgetMs;

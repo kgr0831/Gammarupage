@@ -5,7 +5,7 @@ import { check, digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 import { briefConfig } from "./config.mjs";
 import { BriefStore, PrivateBlobFiles } from "./storage.mjs";
-import { deliverBriefLinks } from "./notify.mjs";
+import { deliverBriefLinks, deliverLoginNotice } from "./notify.mjs";
 import * as view from "./views.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -52,7 +52,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
     const proof = (role) => role === "admin" ? digest([config.adminUsername, config.token]) : role === "publisher" ? digest(config.publisherToken) : "discord";
     async function signIn(role, subject) {
       const token = randomBytes(32).toString("hex");
-      const age = role === "publisher" ? 30 * 86400 : role === "admin" ? 43200 : 7 * 86400;
+      const age = role === "admin" ? 43200 : 30 * 86400;
       await store.update((s) => { delete s.sessions[sessionHash]; s.sessions[digest(token)] = { role, subject, proof: proof(role), expires: Date.now() + age * 1000 }; });
       headers.append("Set-Cookie", cookie(cookieName, token, age));
     }
@@ -63,6 +63,8 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       check(url.origin === config.origin, "설정된 사이트 주소로 접속해 주세요.", 400);
       check(["GET", "POST"].includes(request.method), "허용되지 않는 요청입니다.", 405);
       if (request.method === "POST") check(request.headers.get("origin") === config.origin, "다른 사이트의 요청은 허용되지 않습니다.", 403);
+      // Public pages check this endpoint too; guests need no Blob read.
+      if (pathname === "/reports/session" && request.method === "GET" && !cookies[cookieName]) return send(JSON.stringify({ authenticated: false }), 200, "application/json; charset=utf-8");
       const data = await store.read();
       const savedSession = data.sessions[sessionHash];
       const session = savedSession?.expires > Date.now() && savedSession.proof === proof(savedSession.role) ? savedSession : null;
@@ -71,6 +73,10 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       const readable = admin || member?.status === "approved";
       const today = seoulClock(now()).date;
       const oauthConfigured = !!(config.discordApplicationId && config.discordClientSecret);
+      if (pathname === "/reports/session" && request.method === "GET") {
+        const visible = session && (session.role !== "member" || member);
+        return send(JSON.stringify(visible ? { authenticated: true, role: session.role, name: member?.name || member?.display_name || config.adminUsername, subscription: member?.status ?? null, canRead: readable } : { authenticated: false }), 200, "application/json; charset=utf-8");
+      }
       if (pathname === "/reports/logout" && request.method === "POST") {
         await store.update((s) => { delete s.sessions[sessionHash]; }); headers.append("Set-Cookie", cookie(cookieName, "", 0)); return redirect("/reports");
       }
@@ -107,27 +113,39 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           if (!response.ok) throw new Error("Profile failed");
           user = userProfile(await response.json());
         } catch { check(false, "Discord 로그인에 실패했습니다. 다시 시도해 주세요.", 502); }
-        await store.update((s) => { s.members[user.id] = { name: "", status: "new", dm_opt_in: false, ...s.members[user.id], ...user }; });
-        await signIn("member", user.id); return redirect("/reports/account");
+        const noticeId = randomBytes(16).toString("hex");
+        const notice = await store.update((s) => {
+          const m = s.members[user.id] = { name: "", status: "new", dm_opt_in: false, ...s.members[user.id], ...user };
+          if (m.status === "new") {
+            m.name ||= user.display_name.replace(/[\x00-\x1f]/g, "").trim().slice(0, 60) || user.username;
+            m.status = "pending"; m.dm_opt_in = true;
+          }
+          // Re-login must not undo an opt-out, rejection or administrator revocation.
+          if (m.login_notice?.createdAt > Date.now() - 60000) return null;
+          m.login_notice = { id: noticeId, createdAt: Date.now(), status: config.discordBotToken ? "pending" : "unavailable" };
+          return config.discordBotToken ? noticeId : null;
+        });
+        await signIn("member", user.id);
+        if (notice) after(() => deliverLoginNotice(store, config, user.id, notice, fetcher).catch(() => console.error("Login notification requires review.")));
+        return redirect("/reports/account?welcome=1");
       }
       if (["/reports/account", "/reports/subscription", "/reports/unsubscribe"].includes(pathname)) {
         if (!member && request.method === "GET") return admin ? redirect("/reports/admin") : send(view.login("member", oauthConfigured));
         check(member, "Discord 로그인이 필요합니다.", 401);
-        if (pathname === "/reports/account" && request.method === "GET") return send(view.account(member));
+        if (pathname === "/reports/account" && request.method === "GET") return send(view.account(member, url.searchParams.get("welcome") === "1", url.searchParams.get("saved") === "1"));
         check(request.method === "POST", "허용되지 않는 요청입니다.", 405);
         const form = await formData(request);
         await store.update((s) => {
           const m = s.members[member.id];
           if (pathname === "/reports/unsubscribe") { m.status = "revoked"; m.dm_opt_in = false; }
           else {
-            if (["new", "revoked", "rejected"].includes(m.status)) {
-              const name = textField(form, "name").trim(); check(name.length >= 2 && name.length <= 60 && !/[\x00-\x1f]/.test(name), "이름은 2~60자로 입력해 주세요."); m.name = name; m.status = "pending";
-            }
+            const name = textField(form, "name").trim(); check(name.length >= 1 && name.length <= 60 && !/[\x00-\x1f]/.test(name), "이름은 1~60자로 입력해 주세요."); m.name = name;
+            if (["new", "revoked", "rejected"].includes(m.status)) m.status = "pending";
             m.dm_opt_in = textField(form, "dm") === "yes";
           }
           for (const d of Object.values(s.deliveries)) if (d.memberId === m.id && d.status === "pending" && (!m.dm_opt_in || m.status !== "approved")) d.status = "cancelled";
         });
-        return redirect("/reports/account");
+        return redirect("/reports/account?saved=1");
       }
       if (pathname === "/reports/admin" || pathname.startsWith("/reports/admin/")) {
         if (!admin && request.method === "GET") return redirect("/reports/login/admin");
@@ -173,6 +191,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         check(false, "페이지를 찾을 수 없습니다.", 404);
       }
       if (!session && request.method === "GET") return send(view.login("member", oauthConfigured));
+      if (member && !readable && pathname === "/reports" && request.method === "GET") return redirect("/reports/account");
       check(readable, "승인된 구독자만 보고서를 볼 수 있습니다.", 403);
       if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1)));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);

@@ -8,7 +8,9 @@ export class PrivateBlobFiles {
   constructor(token) { this.token = token; }
   async read(path) {
     check(this.token, "Vercel의 비공개 파일 저장소 연결이 필요합니다.", 503);
-    const result = await get(path, { access: "private", token: this.token, useCache: false, abortSignal: AbortSignal.timeout(15000) });
+    // Compressed delivery can weaken the ETag. CAS needs the original object's
+    // strong ETag from the same response as the bytes being edited.
+    const result = await get(path, { access: "private", token: this.token, useCache: false, headers: { "accept-encoding": "identity" }, abortSignal: AbortSignal.timeout(15000) });
     if (!result) return null;
     check(result.statusCode === 200 && result.stream, "파일을 읽지 못했습니다.", 502);
     return { text: await new Response(result.stream).text(), etag: result.blob.etag };
