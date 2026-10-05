@@ -1,0 +1,4 @@
+# Replace with your own DNS name; point its A/AAAA records at the server.
+funding.example.org {
+    reverse_proxy 127.0.0.1:4310
+}

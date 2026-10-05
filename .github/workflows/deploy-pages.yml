@@ -1,17 +1,16 @@
-name: Deploy GitHub Pages
+name: Validate Vercel application
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: validate-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -30,24 +29,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Test report uploads and access control
+        run: npm run reports:test
 
-      - name: Build static site
+      - name: Build Vercel application
         run: npm run build
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: ./out
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

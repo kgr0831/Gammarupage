@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#080918">
+  <title>GAMMARU — Funding radar</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">본문 바로가기</a>
+  <header class="topbar"><a href="/" class="brand"><span class="brand-mark" aria-hidden="true">G<span>•</span></span> GAMMARU</a><span class="topbar-label">OPERATIONS / FUNDING</span><button class="quiet" id="logout" hidden>로그아웃 ↗</button></header>
+  <main id="main">
+    <section id="login" class="login" hidden>
+      <p class="eyebrow">GAMMARU / OPERATIONS</p><h1>좋은 기회를,<br><em>다음 활동으로.</em></h1>
+      <p>겜마루 운영진을 위한 자금 조달 리포트입니다.</p>
+      <form id="login-form"><label for="password">운영자 암호</label><input id="password" type="password" autocomplete="current-password" required minlength="32"><button class="primary">운영 보드 열기 <span>↗</span></button></form>
+    </section>
+    <div id="dashboard" hidden>
+      <div id="demo-banner" class="banner" hidden>디자인 미리보기 · 아래 공고는 화면 검증용 가상 데이터입니다. 실제 지원사업이 아니며 발송·실행은 비활성화되어 있습니다.</div>
+      <section class="hero"><div><p class="eyebrow"><span class="pulse"></span> GAMMARU FUNDING RADAR</p><h1>다음 게임을 위한<br><em>다음 기회.</em></h1><p class="hero-copy">찾아온 지원 기회를 검토하고,<br>겜마루의 다음 활동으로 이어가세요.</p></div><aside class="hero-aside"><span class="edition">DAILY BRIEFING <span id="report-date">—</span></span><div class="radar-art" aria-hidden="true"><span class="radar-dot"></span><span class="radar-cross">+</span></div><span class="hero-note">DISCOVER → REVIEW → ACT</span></aside></section>
+      <div class="toolbar"><div class="tabs" role="group" aria-label="보기"><button data-tab="report" class="active" aria-pressed="true">오늘의 리포트</button><button data-tab="actions" aria-pressed="false">실행 제안 <span id="pending-count">0</span></button><button data-tab="history" aria-pressed="false">운영 기록</button></div><button id="run" class="primary small">지금 탐색 <span>↗</span></button></div>
+      <section id="report-panel">
+        <div class="metrics" id="metrics"></div>
+        <div class="briefing"><span class="eyebrow">EDITOR’S NOTE</span><p id="summary">아직 리포트가 없습니다. 첫 탐색을 시작해 주세요.</p></div>
+        <div id="warnings"></div>
+        <div class="section-head"><h2>기회 목록<span>.</span></h2><label>리포트 날짜 <select id="report-select" aria-label="리포트 날짜"></select></label></div>
+        <div id="opportunities" class="opportunities"></div>
+      </section>
+      <section id="actions-panel" hidden><div class="section-head"><div><p class="eyebrow">YOUR NEXT MOVE</p><h2>검토하고, 실행하기<span>.</span></h2></div></div><p class="muted">공고 원문과 최종 내용을 확인한 뒤 승인해 주세요. 승인한 본문으로 문서를 만들거나 메일을 발송합니다.</p><div id="actions" class="actions"></div></section>
+      <section id="history-panel" hidden><div class="section-head"><h2>매일의 기록<span>.</span></h2></div><div id="settings" class="settings"></div><div id="history"></div><details><summary>승인·실행 기록</summary><div id="audit"></div></details></section>
+      <footer><span>GAMMARU <b>FUNDING RADAR</b></span><p>검색 결과는 AI의 조사 초안입니다. 신청 자격과 마감 시각은 원문에서 최종 확인하세요.</p></footer>
+    </div>
+    <div id="message" role="status" aria-live="polite" hidden></div>
+  </main>
+</body>
+</html>

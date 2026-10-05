@@ -2,6 +2,36 @@
 
 숭실대학교 게임 제작 중앙동아리 겜마루의 랜딩페이지와 공개 게임 아카이브입니다.
 
+현재 개발 목표는 [겜마루 운영 플랫폼 기획안](docs/gammaru-platform-plan.md)에 정리했습니다.
+
+## 구독자 전용 데일리 브리프
+
+기존 Vercel 사이트 **https://gammarupage.vercel.app/** 에 붙일 HTML 보고서 보관함을 추가했습니다. dots가 외부 후원·운영자금·유용한 정보를 조사하고 [Design.md](Design.md)를 따라 완성한 HTML을 올리는 방식입니다. 채용공고 수집이 아닙니다.
+
+- `/reports/upload`: HTML 업로드 → 미리보기 → 등록
+- `/reports`: 지금까지 올린 보고서 목록·검색
+- `/reports/YYYY-MM-DD`: 날짜별 보고서와 전체 목록 링크
+- `/reports/account`: Discord 로그인·구독 신청
+- `/reports/admin`: 관리자 로그인 후 이름·Discord 프로필로 구독 승인
+
+목록과 HTML 원문은 승인된 구독자만 열람하며, 공개 랜딩 메뉴에는 링크를 추가하지 않습니다. Discord 봇은 승인·수신 동의한 회원에게 보고서 주소 한 줄만 DM으로 보냅니다. Private Blob에 저장하므로 최초 기능 배포 후 매일 업로드할 때는 재배포하지 않습니다.
+
+```bash
+npm run reports:dev
+```
+
+로컬 `/reports` 실행에는 `.env.funding`의 개발용 저장소·로그인 설정이 필요합니다. [Vercel 연결 안내](docs/vercel-html-reports.md), [dots 예약 작업 지시문](docs/dots-daily-brief.md)을 참고하세요. **실제 저장소 연결·배포·Discord OAuth 연결·dots 예약은 아직 완료하지 않았습니다.**
+
+## 기존 운영자금 탐색·승인 시제품
+
+`funding/`에 별도 Node 서버와 HTML 대시보드가 있습니다. 기존 랜딩 페이지의 색상을 사용하며 Codex 우선 조사, 팩트챗 웹 검색 대체, 일일 리포트, 디스코드 링크 알림, 승인 후 문서 생성·이메일 발송을 제공합니다. 운영 데이터는 공개 사이트 빌드에 포함되지 않습니다.
+
+```bash
+npm run funding:preview
+```
+
+가상 데이터로 만든 읽기 전용 화면은 `http://127.0.0.1:4311`에서 볼 수 있습니다. [독립 시제품](funding/README.md)과 [이전 회원 포털](funding/portal/README.md)은 별도 상시 서버를 전제로 한 기록입니다. 팩트챗 자동 대체·외부 작업 승인·스크럼·랜딩 CMS는 현재 Vercel 보고서 경로에 연결되지 않았습니다.
+
 ## 로컬 실행
 
 ```bash
@@ -65,15 +95,11 @@ npm run test:reel -- http://127.0.0.1:3000
 npm run test:details -- http://127.0.0.1:3000
 ```
 
-GitHub Pages용 정적 결과물은 Actions 환경과 같은 경로로 확인할 수 있습니다.
+보고서 업로드·권한·DM 처리는 외부 계정에 접속하지 않는 테스트로 검증합니다.
 
 ```bash
-GITHUB_ACTIONS=true GITHUB_REPOSITORY=kgr0831/Gammarupage npm run build
-npm run preview:pages
-npm run test:smoke -- http://127.0.0.1:4173/Gammarupage
+npm run reports:test
+npm run reports:test:browser
 ```
 
-`main` 브랜치에 반영되면 GitHub Actions가 `https://kgr0831.github.io/Gammarupage/`로 배포합니다.
-빌드 후처리는 GitHub Pages의 정적 파일 규칙에서도 Next.js 탭 이동과 프리페치가 유지되도록 클라이언트 탐색 파일 별칭을 함께 생성합니다.
-
-Vercel에서는 기본 `npm run build`를 사용합니다. 콘텐츠 해시가 포함된 영상 경로에 1년 immutable 캐시 헤더를 적용합니다. GitHub Pages의 캐시 정책은 플랫폼에서 관리하며 Next.js 헤더 설정은 적용되지 않습니다.
+Vercel에서는 `npm run build`를 사용합니다. `/reports`는 서버에서 권한을 확인하는 경로이므로 정적 내보내기를 사용하지 않습니다. 기존 GitHub Pages 워크플로는 테스트·빌드 검증으로 변경했고, 실제 배포는 기존 Vercel 프로젝트 연결을 사용합니다. 콘텐츠 해시가 포함된 영상 경로의 1년 immutable 캐시 헤더는 유지합니다.

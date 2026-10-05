@@ -1,0 +1,24 @@
+[Unit]
+Description=GAMMARU funding research and approval dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gammaru
+Group=gammaru
+WorkingDirectory=/opt/gammaru
+EnvironmentFile=/etc/gammaru-funding.env
+ExecStart=/usr/bin/node /opt/gammaru/funding/server.mjs
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/gammaru /home/gammaru/.codex-funding
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target

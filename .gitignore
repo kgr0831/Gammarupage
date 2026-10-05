@@ -5,6 +5,9 @@ out/
 .DS_Store
 .env*
 !.env.example
+!.env.funding.example
+funding/data/
+funding/.codex/
 public/media/clips/*
 !public/media/clips/.gitkeep
 test-results/

@@ -1,0 +1,4 @@
+# Replace with the same domain used for the landing and FUNDING_ORIGIN.
+gammaru.example.org {
+    reverse_proxy 127.0.0.1:4310
+}

@@ -1,0 +1,26 @@
+[Unit]
+Description=GAMMARU landing and subscriber daily brief
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=gammaru
+Group=gammaru
+WorkingDirectory=/opt/gammaru
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/gammaru-funding.env
+ExecStart=/usr/bin/node /opt/gammaru/funding/platform.mjs
+Restart=on-failure
+RestartSec=10
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+# Pre-create the data directory and build Next before enabling the service.
+ReadWritePaths=/var/lib/gammaru /opt/gammaru/.next/cache
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target
