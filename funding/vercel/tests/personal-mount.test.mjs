@@ -7,6 +7,7 @@ import { personalConfig } from "../config.mjs";
 import { MemoryFiles, today } from "./helpers.mjs";
 import { digest } from "../../schema.mjs";
 import { deliverBriefLinks } from "../notify.mjs";
+import { reportChannel } from "../access.mjs";
 
 const id = "100000000000000001", origin = "https://example.org";
 export function mountedFixture() {
@@ -163,4 +164,78 @@ test("only the personal account page permits OAuth form redirects to Discord", a
   const raw = "<html><body>Private raw HTML</body></html>";
   const draft = await app.personalStore.stage({ date: today, title: "Policy fixture", summary: "", html: raw }, digest(cookie), today);
   assert.equal(policy(await app.request(`/personal/upload/preview/${draft.id}/html`, own)), "'none'");
+});
+
+const personalChannel = "300000000000000002";
+async function channelDraft(app, pub, notify = true) {
+  const html = `<html><body>Shared personal channel report<script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion: (await app.personalStore.read()).workflowVersion, opportunities: [] })}</script></body></html>`;
+  return app.personalStore.stage({ date: today, title: "Personal channel fixture", summary: "Public summary", html, notify }, digest(pub.split("=")[1]), today);
+}
+
+test("mounted personal reports use only their explicit channel, without requiring an owner DM subscription", async () => {
+  const app = mountedFixture(), pub = await app.login(true, true);
+  assert.equal(reportChannel(personalConfig(new Request(`${origin}/personal`), app.env)), "");
+  app.env.PERSONAL_DISCORD_REPORT_CHANNEL_ID = personalChannel;
+  const config = personalConfig(new Request(`${origin}/personal`), app.env);
+  assert.equal(reportChannel(config), personalChannel); assert.equal(config.dmEnabled, false);
+  const draft = await channelDraft(app, pub);
+  assert.equal((await app.request("/personal/upload/publish", pub, { draft: draft.id, confirmed: "yes" })).status, 303);
+  const rows = Object.values((await app.personalStore.read()).deliveries);
+  assert.equal(rows.length, 1); assert.equal(rows[0].channelId, personalChannel); assert.equal(rows[0].memberId, undefined);
+  assert.deepEqual((await app.clubStore.read()).deliveries, {});
+  const upload = await (await app.request("/personal/upload", pub)).text();
+  assert.match(upload, /채널 활성/); assert.match(upload, /서버 채널에 게시하기/); assert.doesNotMatch(upload, /구독 승인이 필요/);
+  const guide = await (await app.request("/personal/upload?guide=1", pub)).text();
+  assert.match(guide, /공모전·채용 데일리 브리핑 · 서버 채널 알림/);
+  const calls = [];
+  await deliverBriefLinks(app.personalStore, config, async (url, options) => {
+    calls.push({ url, body: options.body && JSON.parse(options.body) });
+    return Response.json(options.method === "GET" ? { id: personalChannel, guild_id: "400000000000000002", type: 0 } : { id: "500000000000000002" });
+  });
+  assert.deepEqual(calls.map(call => call.url), [`https://discord.com/api/v10/channels/${personalChannel}`, `https://discord.com/api/v10/channels/${personalChannel}/messages`]);
+  assert.ok(calls[1].body.content.endsWith(`${origin}/personal/${today}`));
+  assert.deepEqual(calls[1].body.allowed_mentions, { parse: [] });
+  assert.equal(Object.values((await app.personalStore.read()).deliveries)[0].status, "sent");
+});
+
+test("switching personal reports to a channel cancels pending DMs and posting the current edition is idempotent", async () => {
+  const app = mountedFixture(), own = await app.login(true), pub = await app.login(true, true);
+  await app.personalStore.update(state => { state.personalAccount = { discordId: id, revision: 1 }; state.members[id] = { id, display_name: "Owner", status: "approved", dm_opt_in: true }; });
+  const draft = await channelDraft(app, pub);
+  await app.request("/personal/upload/publish", pub, { draft: draft.id, confirmed: "yes" });
+  app.env.PERSONAL_DISCORD_REPORT_CHANNEL_ID = personalChannel;
+  const config = personalConfig(new Request(`${origin}/personal`), app.env);
+  assert.equal((await app.request("/personal/notify", pub, {})).status, 303);
+  const calls = [];
+  const fetcher = async (url, options) => {
+    calls.push(url); assert.ok(!url.includes("/users/@me/channels"));
+    return Response.json(options.method === "GET" ? { id: personalChannel, guild_id: "400000000000000002", type: 0 } : { id: "500000000000000002" });
+  };
+  await deliverBriefLinks(app.personalStore, config, fetcher);
+  const rows = Object.values((await app.personalStore.read()).deliveries);
+  assert.equal(rows.find(row => row.memberId).status, "cancelled"); assert.equal(rows.find(row => row.channelId).status, "sent");
+  await app.request("/personal/notify", pub, {});
+  await deliverBriefLinks(app.personalStore, config, fetcher);
+  assert.equal(calls.length, 2);
+  const account = await (await app.request("/personal/account", own)).text();
+  assert.match(account, /서버 채널 알림/); assert.doesNotMatch(account, /name="dm"|확인 DM 보내기/);
+  assert.equal((await app.request("/personal/account/confirmation", own, { revision: "1" })).status, 409);
+  assert.equal((await app.request("/personal/subscription", own, { revision: "1", dm: "yes" })).status, 409);
+});
+
+test("invalid or inaccessible personal channels never fall back to DM or the club channel", async () => {
+  const app = mountedFixture(), pub = await app.login(true, true);
+  app.env.PERSONAL_DISCORD_REPORT_CHANNEL_ID = "invalid";
+  const draft = await channelDraft(app, pub);
+  assert.equal((await app.request("/personal/upload/publish", pub, { draft: draft.id, confirmed: "yes" })).status, 503);
+  assert.equal((await app.personalStore.read()).reports.length, 0);
+  await deliverBriefLinks(app.personalStore, personalConfig(new Request(`${origin}/personal`), app.env), async () => assert.fail("Malformed target must not send"));
+  app.env.PERSONAL_DISCORD_REPORT_CHANNEL_ID = personalChannel;
+  assert.equal((await app.request("/personal/upload/publish", pub, { draft: draft.id, confirmed: "yes" })).status, 303);
+  let calls = 0;
+  await deliverBriefLinks(app.personalStore, personalConfig(new Request(`${origin}/personal`), app.env), async (url, options) => {
+    calls++; assert.equal(url, `https://discord.com/api/v10/channels/${personalChannel}`); assert.equal(options.method, "GET");
+    return Response.json({}, { status: 403 });
+  });
+  assert.equal(calls, 1); assert.equal(Object.values((await app.personalStore.read()).deliveries)[0].status, "blocked");
 });

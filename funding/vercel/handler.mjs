@@ -188,6 +188,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
             m.status = personal ? "approved" : "pending"; m.dm_opt_in = true;
           }
           // Re-login must not undo an opt-out, rejection or administrator revocation.
+          if (personal && channelId) { cancelPersonalNotices(s, user.id); return null; }
           if (m.login_notice?.createdAt > Date.now() - 60000) return null;
           m.login_notice = { id: noticeId, createdAt: Date.now(), status: transportReady ? "pending" : "unavailable" };
           return transportReady ? noticeId : null;
@@ -200,7 +201,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (!member && request.method === "GET") return send(view.sharedLogin(oauthConfigured));
         check(readable, "Discord로 로그인해 주세요.", 403);
         check(pathname === "/reports/account" && request.method === "GET", "개인 알림 연결은 운영자만 관리할 수 있습니다.", 403);
-        return send(view.readerAccount(member));
+        return send(view.readerAccount(member, !!channelId));
       }
       if (personalAccountMode && ["/reports/account", "/reports/subscription", "/reports/unsubscribe", "/reports/account/confirmation"].includes(pathname)) {
         if (!admin && request.method === "GET") return redirect("/reports/login/admin");
@@ -209,9 +210,10 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           // Browsers enforce form-action on the POST's redirect to Discord too.
           // Only this account page needs an external form navigation destination.
           headers.set("Content-Security-Policy", security["Content-Security-Policy"].replace("form-action 'self';", "form-action 'self' https://discord.com;"));
-          return send(view.personalAccount(linkedMember, data.personalAccount?.revision || 0, oauthConfigured, url.searchParams, config.discordApplicationId));
+          return send(view.personalAccount(linkedMember, data.personalAccount?.revision || 0, oauthConfigured, url.searchParams, config.discordApplicationId, !!channelId));
         }
         check(request.method === "POST" && pathname !== "/reports/account", "요청을 확인해 주세요.", 405);
+        check(!channelId || pathname === "/reports/unsubscribe", "보고서 알림은 서버 채널에서 확인해 주세요.", 409);
         const form = await formData(request), revision = Number(textField(form, "revision"));
         check(/^\d+$/.test(textField(form, "revision")), "연결 버전을 확인해 주세요.");
         const noticeId = randomBytes(16).toString("hex");
@@ -294,9 +296,9 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
             const [instructions, design, context] = await Promise.all([
               source("instructions", data), source("design", data), source("context", data),
             ]);
-            return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role));
+            return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role, !!channelId));
           }
-          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal, basePath));
+          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!!channelId || !personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal, basePath));
         }
         if (Object.hasOwn(sourceFiles, pathname.slice("/reports/".length)) && request.method === "GET") return send(await source(pathname.slice("/reports/".length), data), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
@@ -329,7 +331,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         }
         if (pathname === "/reports/upload/publish" && request.method === "POST") {
           const form = await formData(request); check(textField(form, "confirmed") === "yes", "보고서 내용을 확인해 주세요.");
-          const result = await store.publish(await store.draft(textField(form, "draft"), sessionHash), today, channelId, config.personalOwnerId || "", personalAccountMode);
+          const result = await store.publish(await store.draft(textField(form, "draft"), sessionHash), today, channelId, config.personalOwnerId || "", personalAccountMode, { allowPersonalChannel: sharedPersonal && !!channelId });
           // Resume persisted queues after an interrupted upload response, too.
           scheduleNotifications();
           return redirect(`/reports/upload?published=${result.report.date}`);
@@ -367,7 +369,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         await store.attachOpportunities(attachMatch[1], parseManifest(textField(form, "manifest")));
         return redirect(`/reports/${attachMatch[1]}?progress=1`);
       }
-      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, viewRole, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal, privateReader ? view.readerOverview() : personalAccountMode ? view.personalOverview(linkedMember) : ""));
+      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, viewRole, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal, privateReader ? view.readerOverview(!!channelId) : personalAccountMode ? view.personalOverview(linkedMember, !!channelId) : ""));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);
       check(reportMatch && request.method === "GET", "페이지를 찾을 수 없습니다.", 404);
       let report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);

@@ -32,7 +32,7 @@ export async function deliverApprovalNotice(store, config, memberId, noticeId, f
 }
 
 async function deliverMemberNotice(store, config, memberId, noticeId, field, fetcher) {
-  if (!config.discordBotToken) return;
+  if (!config.discordBotToken || (isPersonal(config) && reportChannel(config))) return;
   const claimed = await store.update((state) => {
     const member = state.members[memberId], notice = member?.[field];
     if (!allowedMember(member, config, state)) return false;

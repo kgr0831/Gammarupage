@@ -249,12 +249,13 @@ try {
   await personalContext.close();
   const mountedStore = new BriefStore(app.files, "personal/briefs");
   let mountedDiscordId = user;
-  app.handler = createSiteHandler({ env: {
+  const mountedEnv = {
     REPORTS_SITE_URL: app.config.origin, FUNDING_ADMIN_USERNAME: "club-admin", FUNDING_ADMIN_TOKEN: app.config.token,
     PERSONAL_ADMIN_USERNAME: "personal-owner", PERSONAL_ADMIN_TOKEN: app.config.publisherToken,
     PERSONAL_PUBLISHER_TOKEN: "test-publisher-".repeat(4), DISCORD_APPLICATION_ID: app.config.discordApplicationId,
     DISCORD_CLIENT_SECRET: "mock-client-secret",
-  }, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: mountedDiscordId, username: "linked-personal", global_name: "개인 검증 계정" }) });
+  };
+  app.handler = createSiteHandler({ env: mountedEnv, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: mountedDiscordId, username: "linked-personal", global_name: "개인 검증 계정" }) });
   const sharedContext = await browser.newContext(), sharedPage = await sharedContext.newPage();
   await sharedPage.goto(`${app.config.origin}/reports/login/admin`);
   await sharedPage.getByLabel("아이디", { exact: true }).fill("club-admin");
@@ -355,6 +356,17 @@ try {
   assert.equal(sharedState.memberProgress["100000000000000012"][clickItem.id].note, "");
   assert.equal(sharedState.opportunities[clickItem.id].status, "in_progress");
   for (const context of readerContexts) await context.close();
+  mountedEnv.PERSONAL_DISCORD_REPORT_CHANNEL_ID = "300000000000000002";
+  mountedEnv.DISCORD_BOT_TOKEN = "mock-channel-bot";
+  await sharedPage.goto(`${app.config.origin}/personal/account`);
+  await sharedPage.getByRole("heading", { name: "서버 채널 알림", exact: true }).waitFor();
+  assert.equal(await sharedPage.locator('input[name="dm"]').count(), 0);
+  assert.equal(await sharedPage.getByRole("button", { name: "확인 DM 보내기", exact: true }).count(), 0);
+  assert.equal(await sharedPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await sharedPage.screenshot({ path: path.join(output, "personal-channel-account-mobile.png"), fullPage: true });
+  await sharedPage.goto(`${app.config.origin}/personal/upload`);
+  await sharedPage.getByText("채널 활성", { exact: false }).waitFor();
+  assert.equal(await sharedPage.getByLabel("오늘 보고서의 제목·요약·링크를 Discord 서버 채널에 게시하기", { exact: true }).isChecked(), true);
   await sharedContext.close();
   console.log("Browser passed: club workflows, private personal profile, owner settings, reissue history, stale-click safety, Discord-only sharing with two isolated readers and mobile layout. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

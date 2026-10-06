@@ -31,6 +31,7 @@ export function briefConfig(request, env = process.env) {
 // The personal mount has its own credentials, sessions and storage namespace.
 // Shared Discord application credentials do not grant access to either account.
 export function personalConfig(request, env = process.env) {
+  const personalReportChannelId = (env.PERSONAL_DISCORD_REPORT_CHANNEL_ID || "").trim();
   return {
     ...briefConfig(request, {
       ...env, REPORTS_SERVICE: "personal", REPORTS_PERSONAL_OWNER_ID: "",
@@ -38,9 +39,9 @@ export function personalConfig(request, env = process.env) {
       FUNDING_ADMIN_TOKEN: env.PERSONAL_ADMIN_TOKEN || "",
       FUNDING_PUBLISHER_TOKEN: env.PERSONAL_PUBLISHER_TOKEN || "",
       BLOB_READ_WRITE_TOKEN: env.PERSONAL_BLOB_READ_WRITE_TOKEN || env.BLOB_READ_WRITE_TOKEN || "",
-      DISCORD_REPORT_CHANNEL_ID: "", DISCORD_DM_ENABLED: "true",
+      DISCORD_REPORT_CHANNEL_ID: "", DISCORD_DM_ENABLED: personalReportChannelId ? "false" : "true",
       DISCORD_DELIVERY_MODE: "direct", DISCORD_WORKER_TOKEN: "",
     }),
-    basePath: "/personal", oauthCallbackPath: "/reports/auth/callback", discordLoginReaders: true,
+    basePath: "/personal", oauthCallbackPath: "/reports/auth/callback", discordLoginReaders: true, personalReportChannelId,
   };
 }

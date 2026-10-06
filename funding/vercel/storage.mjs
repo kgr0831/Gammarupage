@@ -97,12 +97,13 @@ export class BriefStore {
     check(draft.owner === owner && draft.expires > Date.now(), "이 로그인에서 만든 미리보기가 아니거나 만료되었습니다.", 403);
     return draft;
   }
-  async publish(draft, today, channelId = "", personalOwnerId = "", personalAccountMode = false) {
+  async publish(draft, today, channelId = "", personalOwnerId = "", personalAccountMode = false, { allowPersonalChannel = false } = {}) {
     const personal = personalAccountMode || !!personalOwnerId;
     const manifest = manifestFromHtml(draft.html);
     check(!personal || manifest?.audience === "personal", "최신 개인 보고서 지침에 맞게 audience: personal과 분야 정보를 넣어 다시 미리보기해 주세요.", 409);
     check(personal || manifest?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.", 409);
-    if (personal) channelId = "";
+    if (personal && !allowPersonalChannel) channelId = "";
+    if (channelId) check(/^\d{17,20}$/.test(channelId), "보고서 채널 설정을 확인해 주세요.", 503);
     const htmlPath = `${this.namespace}/html/${draft.date}/${draft.hash}.html`;
     // Immutable content first; only a committed index entry makes it visible or queues notifications.
     try { await this.files.write(htmlPath, draft.html); }
