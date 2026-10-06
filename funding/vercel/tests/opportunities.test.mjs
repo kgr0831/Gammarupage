@@ -95,6 +95,7 @@ test("one-click status updates preserve notes; note-only edits preserve status a
   saved = (await app.store.read()).opportunities[item().id];
   assert.equal(saved.status, "deferred");
   assert.equal(saved.note, "예산 확정 후 검토");
+  assert.equal((await app.request(endpoint, member, { status: "completed", revision: "1" })).status, 409);
   assert.equal((await app.request(endpoint, member, { note: "오래된 메모", revision: "1" })).status, 409);
   assert.equal((await app.request(endpoint, member, { revision: "2" })).status, 400);
   assert.equal((await app.request(endpoint, member, { note: "", revision: "2" })).status, 303);

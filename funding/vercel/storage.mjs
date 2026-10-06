@@ -142,10 +142,10 @@ export class BriefStore {
   async queueChannelReport(today, channelId) {
     return this.update((state) => queueChannel(state, today, channelId));
   }
-  async setProgress(id, input, actor, memberId = null) {
+  async setProgress(id, input, actor, memberId = null, options = {}) {
     return this.update((state) => {
       check(!memberId || state.members[memberId]?.status === "approved", "구독 승인이 변경되어 진행 기록을 저장할 수 없습니다.", 403);
-      return changeProgress(state, id, input, actor);
+      return changeProgress(state, id, input, actor, options);
     });
   }
   async attachOpportunities(date, input) {

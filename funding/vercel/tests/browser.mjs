@@ -285,10 +285,11 @@ try {
   await sharedPage.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
   await sharedPage.waitForURL("**/personal/upload");
   assert.equal((await mountedStore.read()).personalAccount.discordId, user);
+  const clickItem = { id: "personal-click-fixture", category: "contest", title: "개인 상태 버튼 검증", sourceUrl: "https://example.org/click", benefit: "가상 기회", eligibility: "검증용", deadline: "미정", nextAction: "조건 확인" };
   for (const revision of [1, 2]) {
     if (revision > 1) await sharedPage.goto(`${app.config.origin}/personal/upload`);
     const stateVersion = (await mountedStore.read()).workflowVersion;
-    const html = `<html><body><h1>Personal fixture v${revision}</h1><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion, opportunities: [] })}</script></body></html>`;
+    const html = `<html><body><h1>Personal fixture v${revision}</h1><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion, opportunities: [clickItem] })}</script></body></html>`;
     await sharedPage.getByLabel("보고서 제목", { exact: true }).fill(`개인 수정본 검증 v${revision}`);
     await sharedPage.getByText("파일 대신 HTML 내용 붙여넣기", { exact: true }).click();
     await sharedPage.getByLabel("HTML 전체 내용", { exact: true }).fill(html);
@@ -310,11 +311,20 @@ try {
   }
   await sharedPage.screenshot({ path: path.join(output, "personal-reissue-mobile.png"), fullPage: true });
   await sharedPage.goto(`${app.config.origin}/personal/${today}`);
+  const clickRow = sharedPage.locator(`#progress-${clickItem.id}`);
+  assert.equal(await clickRow.locator('.quick-status input[name="revision"]').inputValue(), "0");
+  await mountedStore.setProgress(clickItem.id, { revision: 0, note: "다른 창에서 새로 저장한 메모" }, "admin");
+  await clickRow.getByRole("button", { name: "보류", exact: true }).click();
+  await clickRow.getByText("현재 상태 · 보류", { exact: true }).waitFor();
+  assert.equal((await mountedStore.read()).opportunities[clickItem.id].note, "다른 창에서 새로 저장한 메모");
+  await clickRow.getByRole("button", { name: "진행 중", exact: true }).click();
+  await clickRow.getByText("현재 상태 · 진행 중", { exact: true }).waitFor();
+  assert.equal((await mountedStore.read()).opportunities[clickItem.id].status, "in_progress");
   await sharedPage.getByText("수정 이력 · 현재 v2", { exact: true }).click();
   const oldUrl = await sharedPage.getByRole("link", { name: "이전 v1 원문 보기", exact: true }).getAttribute("href");
   const oldVersion = await sharedPage.request.get(`${app.config.origin}${oldUrl}`);
   assert.match(await oldVersion.text(), /Personal fixture v1/);
   assert.match(oldVersion.headers()["content-security-policy"], /script-src 'none'/);
   await sharedContext.close();
-  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, same-day reissue and version history, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
+  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, same-day reissue and version history, stale personal status buttons preserving notes, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

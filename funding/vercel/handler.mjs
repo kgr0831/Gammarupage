@@ -330,7 +330,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         const revision = textField(form, "revision");
         check(/^\d+$/.test(revision), "진행 기록 버전을 확인해 주세요.");
         check(form.has("status") || form.has("note"), "변경할 상태나 메모가 필요합니다.");
-        await store.setProgress(progressMatch[1], { status: form.has("status") ? textField(form, "status") : undefined, note: form.has("note") ? textField(form, "note") : undefined, revision: Number(revision) }, session.subject, admin ? null : member.id);
+        await store.setProgress(progressMatch[1], { status: form.has("status") ? textField(form, "status") : undefined, note: form.has("note") ? textField(form, "note") : undefined, revision: Number(revision) }, session.subject, admin ? null : member.id, { allowStaleStatus: personalAccountMode });
         return redirect(date ? `/reports/${date}?progress=${progressMatch[1]}#progress-${progressMatch[1]}` : `/reports/progress#progress-${progressMatch[1]}`);
       }
       const attachMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})\/opportunities$/);

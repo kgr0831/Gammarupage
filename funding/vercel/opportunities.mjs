@@ -88,12 +88,15 @@ export function registerOpportunities(state, report, manifest) {
   report.opportunities = manifest.opportunities;
   state.workflowVersion++;
 }
-export function changeProgress(state, id, input, actor) {
+export function changeProgress(state, id, input, actor, { allowStaleStatus = false } = {}) {
   const item = state.opportunities[id];
   check(item && Object.hasOwn(state.opportunities, id), "진행 항목을 찾을 수 없습니다.", 404);
   const status = input.status ?? item.status;
   check(Object.hasOwn(progressLabels, status), "유효한 진행 상태를 선택해 주세요.");
-  check(Number.isSafeInteger(input.revision) && input.revision === item.revision, "다른 창에서 상태가 변경되었습니다. 새로고침 후 다시 저장해 주세요.", 409);
+  // A personal status button expresses one field of intent. Apply it to the
+  // current record, preserving notes; note edits and shared club updates use CAS.
+  const statusOnly = input.status !== undefined && input.note === undefined;
+  check(Number.isSafeInteger(input.revision) && input.revision >= 0 && (input.revision === item.revision || (allowStaleStatus && statusOnly && input.revision < item.revision)), "다른 창에서 상태가 변경되었습니다. 새로고침 후 다시 저장해 주세요.", 409);
   const value = input.note ?? item.note;
   check(typeof value === "string" && value.length <= 1000 && !/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value), "메모는 1,000자까지 입력할 수 있습니다.");
   const note = value.trim();

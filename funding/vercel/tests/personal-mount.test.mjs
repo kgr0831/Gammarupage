@@ -33,6 +33,41 @@ export function mountedFixture() {
   return { env, files, clubStore, personalStore, pendingWork, handler, request, login };
 }
 
+test("personal status clicks from an older page preserve the latest note and repeated clicks are idempotent", async () => {
+  const app = mountedFixture(), owner = await app.login(true);
+  const item = { id: "personal-status-fixture", category: "contest", title: "Fixture", sourceUrl: "https://example.org/contest", benefit: "Fixture", eligibility: "Verify", deadline: "Verify", nextAction: "Check" };
+  const html = `<html><body><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion: 0, opportunities: [item] })}</script></body></html>`;
+  const draft = await app.personalStore.stage({ date: today, title: "Fixture", summary: "", html, notify: false }, "fixture", today);
+  await app.personalStore.publish(draft, today, "", "", true);
+  const page = await (await app.request(`/personal/${today}`, owner)).text();
+  assert.match(page, /name="revision" value="0"/);
+  const endpoint = `/personal/opportunities/${item.id}/status`;
+  await app.personalStore.setProgress(item.id, { revision: 0, note: "New note from another tab" }, "admin");
+  const input = { revision: "0", status: "deferred", date: today };
+  const first = await app.request(endpoint, owner, input);
+  assert.equal(first.status, 303);
+  assert.equal(first.headers.get("location"), `/personal/${today}?progress=${item.id}#progress-${item.id}`);
+  let state = await app.personalStore.read();
+  assert.equal(state.opportunities[item.id].status, "deferred");
+  assert.equal(state.opportunities[item.id].note, "New note from another tab");
+  const previous = structuredClone(state.opportunities[item.id]), workflowVersion = state.workflowVersion;
+  const duplicate = await Promise.all([app.request(endpoint, owner, input), app.request(endpoint, owner, input)]);
+  assert.ok(duplicate.every(response => response.status === 303));
+  state = await app.personalStore.read();
+  assert.deepEqual(state.opportunities[item.id], previous);
+  assert.equal(state.workflowVersion, workflowVersion);
+  assert.equal((await app.request(endpoint, owner, { ...input, status: "in_progress" })).status, 303);
+  assert.equal((await app.personalStore.read()).opportunities[item.id].status, "in_progress");
+  assert.equal((await app.request(endpoint, owner, { ...input, revision: "999" })).status, 409);
+  assert.equal((await app.request(endpoint, owner, { revision: "0", note: "Old note" })).status, 409);
+  assert.equal((await app.request(endpoint, owner, { ...input, note: "Old mixed update" })).status, 409);
+  assert.equal((await app.personalStore.read()).opportunities[item.id].note, "New note from another tab");
+  const publisher = await app.login(true, true), club = await app.login(false);
+  assert.equal((await app.request(endpoint, publisher, input)).status, 403);
+  assert.equal((await app.request(endpoint, club, input)).status, 403);
+  assert.equal((await app.request(endpoint, "", input)).status, 403);
+});
+
 test("same-origin personal mount has separate credentials, cookies, archive and navigation", async () => {
   const app = mountedFixture(), own = await app.login(true), club = await app.login(false);
   assert.match(own, /^__Host-personal-briefs=/); assert.match(club, /^__Host-briefs=/);
