@@ -3,6 +3,7 @@ import { check, digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 import { formatBriefMessage, formatMemberNotice } from "./notify.mjs";
 import { reportChannel, allowedMember, reportRecipient, isPersonal } from "./access.mjs";
+import { currentDeliveryReport } from "./report-versions.mjs";
 
 const leaseMs = 5 * 60 * 1000;
 const fields = ["login_notice", "approval_notice"];
@@ -20,8 +21,9 @@ function* rows(state) {
 function eligible(entry, state, config, now) {
   const { row, member, field } = entry;
   if (member) return allowedMember(member, config, state) && (field !== "approval_notice" || member.status === "approved") && row.createdAt > now - 86400000;
-  if (row.date !== seoulClock(new Date(now)).date || !state.reports.some((report) => report.date === row.date)) return false;
-  if (isPersonal(config) && state.reports.find((report) => report.date === row.date)?.audience !== "personal") return false;
+  const report = currentDeliveryReport(state, row);
+  if (row.date !== seoulClock(new Date(now)).date || !report) return false;
+  if (isPersonal(config) && report.audience !== "personal") return false;
   const channelId = reportChannel(config);
   return channelId ? row.channelId === channelId : !row.channelId && config.dmEnabled && reportRecipient(state.members[row.memberId], config, state);
 }

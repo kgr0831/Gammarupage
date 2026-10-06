@@ -285,6 +285,36 @@ try {
   await sharedPage.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
   await sharedPage.waitForURL("**/personal/upload");
   assert.equal((await mountedStore.read()).personalAccount.discordId, user);
+  for (const revision of [1, 2]) {
+    if (revision > 1) await sharedPage.goto(`${app.config.origin}/personal/upload`);
+    const stateVersion = (await mountedStore.read()).workflowVersion;
+    const html = `<html><body><h1>Personal fixture v${revision}</h1><script type="application/json" id="gammaru-opportunities">${JSON.stringify({ version: 1, audience: "personal", stateVersion, opportunities: [] })}</script></body></html>`;
+    await sharedPage.getByLabel("보고서 제목", { exact: true }).fill(`개인 수정본 검증 v${revision}`);
+    await sharedPage.getByText("파일 대신 HTML 내용 붙여넣기", { exact: true }).click();
+    await sharedPage.getByLabel("HTML 전체 내용", { exact: true }).fill(html);
+    if (revision > 1) {
+      await sharedPage.getByLabel("이미 발행한 날짜의 수정본으로 재발행", { exact: true }).check();
+      await sharedPage.getByLabel("재발행 사유 (수정본일 때 필수)", { exact: true }).fill("개인 조사 조건 변경 반영");
+    }
+    await sharedPage.getByRole("button", { name: "HTML 미리보기", exact: true }).click();
+    await sharedPage.frameLocator("iframe").getByRole("heading", { name: `Personal fixture v${revision}` }).waitFor();
+    await sharedPage.getByLabel("내용을 확인했고 보고서 등록에 동의합니다.").check();
+    await sharedPage.getByRole("button", { name: revision > 1 ? "이 수정본 재발행하기" : "이 HTML 등록하기", exact: true }).click();
+    await sharedPage.getByText(`현재 v${revision}`, { exact: false }).waitFor();
+  }
+  assert.equal((await mountedStore.read()).reports.length, 1);
+  assert.equal((await mountedStore.read()).reports[0].previousVersions.length, 1);
+  for (const width of [1440, 390, 320]) {
+    await sharedPage.setViewportSize({ width, height: 950 });
+    assert.equal(await sharedPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, "Reissue controls wrap on mobile");
+  }
+  await sharedPage.screenshot({ path: path.join(output, "personal-reissue-mobile.png"), fullPage: true });
+  await sharedPage.goto(`${app.config.origin}/personal/${today}`);
+  await sharedPage.getByText("수정 이력 · 현재 v2", { exact: true }).click();
+  const oldUrl = await sharedPage.getByRole("link", { name: "이전 v1 원문 보기", exact: true }).getAttribute("href");
+  const oldVersion = await sharedPage.request.get(`${app.config.origin}${oldUrl}`);
+  assert.match(await oldVersion.text(), /Personal fixture v1/);
+  assert.match(oldVersion.headers()["content-security-policy"], /script-src 'none'/);
   await sharedContext.close();
-  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
+  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, same-day reissue and version history, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

@@ -2,14 +2,16 @@ import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
+import { reportRevision, deliveryKey } from "./report-versions.mjs";
 
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
 function queueChannel(state, date, channelId) {
   check(/^\d{17,20}$/.test(channelId), "보고서 채널 설정을 확인해 주세요.", 503);
-  check(state.reports.some((r) => r.date === date), "오늘 등록된 보고서가 없습니다.", 404);
-  // One report per target channel, independently of the number of subscribers.
-  const key = `${date}:channel:${channelId}`;
-  state.deliveries[key] ||= { date, channelId, status: "pending", retryAt: 0, claimedAt: null };
+  const report = state.reports.find((r) => r.date === date);
+  check(report, "오늘 등록된 보고서가 없습니다.", 404);
+  // One notification per edition and target, including retries after publication.
+  const key = deliveryKey(report, `channel:${channelId}`);
+  state.deliveries[key] ||= { date, revision: reportRevision(report), channelId, status: "pending", retryAt: 0, claimedAt: null };
   return state.deliveries[key];
 }
 export class PrivateBlobFiles {
@@ -73,7 +75,16 @@ export class BriefStore {
     check(typeof input.summary === "string" && input.summary.length <= 500, "요약은 500자까지 입력할 수 있습니다.");
     check(typeof input.html === "string" && Buffer.byteLength(input.html) <= 2 * 1024 * 1024 && /<html[\s>]/i.test(input.html) && /<body[\s>]/i.test(input.html), "UTF-8 형식의 완성된 HTML 파일(최대 2MB)이 필요합니다.");
     const id = randomUUID();
-    const draft = { ...input, title: input.title.trim(), manifest: manifestFromHtml(input.html), id, owner, hash: digest(input.html), expires: Date.now() + 1800000 };
+    const manifest = manifestFromHtml(input.html);
+    let baseRevision = 0;
+    if (input.reissue === true) {
+      check(typeof input.changeReason === "string" && input.changeReason.trim().length > 0 && input.changeReason.length <= 300, "재발행 사유를 1~300자로 입력해 주세요.");
+      check(manifest, "수정본에는 최신 stateVersion을 담은 진행 항목 JSON이 필요합니다.");
+      const existing = (await this.read()).reports.find((r) => r.date === input.date);
+      check(existing, "아직 발행된 보고서가 없습니다. 재발행 선택을 해제하고 새 보고서로 등록해 주세요.", 409);
+      baseRevision = reportRevision(existing);
+    }
+    const draft = { ...input, reissue: input.reissue === true, baseRevision, changeReason: input.reissue === true ? input.changeReason.trim() : "", title: input.title.trim(), manifest, id, owner, hash: digest(input.html), expires: Date.now() + 1800000 };
     await this.files.write(`${this.namespace}/drafts/${id}.json`, JSON.stringify(draft));
     return draft;
   }
@@ -98,17 +109,31 @@ export class BriefStore {
     return this.update((state) => {
       const existing = state.reports.find((r) => r.date === draft.date);
       if (existing) {
-        check(existing.hash === draft.hash && existing.title === draft.title && existing.summary === draft.summary, "해당 날짜에 다른 보고서가 이미 있습니다. 기존 파일은 덮어쓰지 않았습니다.", 409);
-        return { report: existing, duplicate: true };
+        if (existing.hash === draft.hash && existing.title === draft.title && existing.summary === draft.summary) return { report: existing, duplicate: true };
+        check(draft.reissue === true, "해당 날짜에 다른 보고서가 이미 있습니다. 수정하려면 ‘수정본으로 재발행’을 선택하고 사유를 입력해 주세요.", 409);
+        check(draft.baseRevision === reportRevision(existing), "미리보기 이후 다른 수정본이 발행되었습니다. 최신 조사 자료를 읽고 다시 미리보기 해 주세요.", 409);
+        check(manifest && draft.changeReason, "최신 진행 항목과 재발행 사유가 필요합니다.", 409);
+      } else {
+        check(!draft.reissue, "재발행할 기존 보고서를 찾을 수 없습니다.", 409);
       }
       const recipient = personalAccountMode ? state.personalAccount?.discordId || "" : personalOwnerId;
-      const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: new Date().toISOString(), ...(personal ? { audience: "personal" } : {}) };
+      const at = new Date().toISOString();
+      const report = { date: draft.date, title: draft.title, summary: draft.summary, hash: draft.hash, path: htmlPath, createdAt: existing?.createdAt || at, revision: existing ? reportRevision(existing) + 1 : 1, ...(personal ? { audience: "personal" } : {}) };
+      if (existing) {
+        const { previousVersions = [], ...prior } = existing;
+        report.previousVersions = [...previousVersions, prior];
+        report.updatedAt = at;
+        report.changeReason = draft.changeReason;
+      }
       registerOpportunities(state, report, manifest);
-      state.reports.push(report);
+      if (existing) {
+        state.reports[state.reports.indexOf(existing)] = report;
+        for (const row of Object.values(state.deliveries)) if (row.date === draft.date && row.status === "pending") row.status = "cancelled";
+      } else state.reports.push(report);
       if (draft.date === today && draft.notify) {
         if (channelId) queueChannel(state, draft.date, channelId);
         else for (const member of Object.values(state.members)) {
-          if (member.status === "approved" && member.dm_opt_in && (!personal || member.id === recipient)) state.deliveries[`${draft.date}:${member.id}`] = { date: draft.date, memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
+          if (member.status === "approved" && member.dm_opt_in && (!personal || member.id === recipient)) state.deliveries[deliveryKey(report, member.id)] = { date: draft.date, revision: reportRevision(report), memberId: member.id, status: "pending", retryAt: 0, claimedAt: null };
         }
       }
       return { report, duplicate: false };

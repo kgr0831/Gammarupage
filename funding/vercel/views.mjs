@@ -1,6 +1,7 @@
 import { layout, hero, esc, hidden, profile, formButton } from "../portal/views.mjs";
 import { readerShellStyles } from "./reader.mjs";
 import { reportOverview, progressOverview } from "./progress-views.mjs";
+import { reportRevision } from "./report-versions.mjs";
 export function page(title, content, role = "guest", personal = false) {
   const nav = role === "admin" ? `<a href="/reports">${personal ? "개인 개요" : "보고서 목록"}</a><a href="/reports/progress">진행 관리</a><a href="/reports/upload">HTML 업로드</a>${personal ? '<a href="/reports/account">Discord 연결</a>' : '<a href="/reports/admin">구독 승인</a>'}` : role === "publisher" ? '<a href="/reports/upload">HTML 업로드</a>' : '<a href="/reports">보고서 목록</a><a href="/reports/progress">진행 현황</a><a href="/reports/account">구독 설정</a>';
   return layout(title, content, role, nav + (personal && ["admin", "member"].includes(role) ? '<a href="/reports/profile">내 조사 조건</a>' : ""), personal).replace('action="/members/logout"', 'action="/reports/logout"').replace("</head>", "<style>.topbar nav{flex-wrap:wrap;min-width:0}</style></head>");
@@ -38,11 +39,12 @@ export function progressPage(opportunities, role, filter = "", personal = false)
 }
 export function publisherGuide({ instructions, design, context, research, today }, role) {
   const source = (id, title, text) => `<section class="panel guide-section" id="${id}"><h2>${title}</h2><pre>${esc(text)}</pre></section>`;
-  const publishedToday = research.previousReports.some((report) => report.date === today);
+  const publishedToday = research.previousReports.find((report) => report.date === today);
   const content = `<div class="publisher-guide"><header class="panel"><h1>조사 자료</h1>
     <p class="notice">${research.audience === "personal" ? "개인 데일리 브리핑 · 본인 DM" : "겜마루 동아리 보고서 · 외부 후원·운영자금·도움되는 정보"}</p>
     <p>작업 지침, 조사 대상 정보, 디자인 기준과 현재 진행 기록을 이 페이지에서 읽을 수 있습니다.</p>
-    <p>한국시간 <strong>${esc(today)}</strong> · <strong>stateVersion: ${research.stateVersion}</strong> · 오늘 보고서 <strong>${publishedToday ? "등록됨 · 중복 발행하지 마세요" : "미등록"}</strong></p>
+    <p>한국시간 <strong>${esc(today)}</strong> · <strong>stateVersion: ${research.stateVersion}</strong> · 오늘 보고서 <strong>${publishedToday ? `등록됨 · v${reportRevision(publishedToday)}` : "미등록"}</strong></p>
+    <p>정기 실행은 오늘 보고서가 있으면 중복 발행하지 않습니다. 사용자가 변경 사항 반영·재발행을 요청했다면 최신 자료로 HTML을 고친 뒤 업로드 화면에서 ‘수정본으로 재발행’을 선택하고 사유를 입력하세요. 기존 버전과 진행 기록은 보관됩니다.</p>
     <p class="hint">진행 기록은 이 페이지를 열었을 때의 값입니다. 발행 직전에 새로고침하고 변경된 상태와 메모를 반영하세요.</p>
     <div class="row"><a class="button secondary small" href="/reports/upload?guide=1">최신 자료 새로고침</a><a class="button small" href="/reports/upload">HTML 업로드로 돌아가기</a></div>
     <nav class="row" aria-label="조사 자료 목차"><a href="#research-state">이전 보고·진행 기록</a><a href="#instructions">dots 운영 지침</a><a href="#context">조사 대상 정보</a><a href="#design">Design.md</a></nav></header>
@@ -50,36 +52,40 @@ export function publisherGuide({ instructions, design, context, research, today 
     ${source("instructions", "dots 운영 지침", instructions)}${source("context", "조사 대상 정보", context)}${source("design", "Design.md", design)}</div>`;
   return readingPage("조사 자료", content, role, research.audience === "personal").replace("</head>", `<style>.publisher-guide{min-width:0}.publisher-guide .guide-section{scroll-margin-top:24px;min-width:0}.publisher-guide pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;font:inherit;line-height:1.8;margin:0;max-width:100%}.publisher-guide h1{font-size:clamp(26px,5vw,38px)}.publisher-guide nav{margin-top:24px;gap:18px}.publisher-guide nav a{text-decoration:underline}</style></head>`);
 }
-export function upload(today, role, published, deliveries, enabled, channelId = "", personal = false) {
+export function upload(today, role, published, deliveries, enabled, channelId = "", personal = false, basePath = "/reports") {
   const target = channelId ? "채널" : "DM";
   const pending = deliveries.filter((d) => d.date === today && d.status === "pending" && (channelId ? d.channelId === channelId : !d.channelId)).length;
   const date = published?.date || today;
-  const rows = deliveries.filter((d) => d.date === date && (channelId ? d.channelId === channelId : !d.channelId));
+  const revision = reportRevision(published);
+  const rows = deliveries.filter((d) => d.date === date && reportRevision(d) === revision && (channelId ? d.channelId === channelId : !d.channelId));
   const labels = { pending: "대기", sending: "전송 중", sent: "전송 완료", blocked: "전송 권한 없음", failed: "실패", uncertain: "결과 불명", cancelled: "취소" };
   const counts = Object.fromEntries(Object.keys(labels).map((key) => [key, rows.filter((row) => row.status === key).length]));
   const result = rows.length
     ? `<dl class="notification-counts">${Object.entries(labels).map(([key, label]) => `<div data-delivery-status="${key}"><dt>${label}</dt><dd>${counts[key]}건</dd></div>`).join("")}</dl>`
     : '<p class="notice">알림 기록이 없습니다. 보고서 발행과 알림 신청 여부를 확인해 주세요.</p>';
   return readingPage("HTML 업로드", `<header class="overview-heading"><p class="overview-date">보고서 등록</p><h1>HTML 업로드</h1><p class="overview-summary">최신 자료 확인 → HTML 미리보기 → 발행 → 알림 확인</p><a class="button secondary small" href="/reports/upload?guide=1">조사 자료·최신 진행 상태 열기</a></header>
-    ${published ? `<section class="panel"><p class="notice">${esc(published.date)} 보고서를 등록했습니다. 주소: <a href="/reports/${published.date}">/reports/${published.date}</a></p><p>이 날짜는 이미 발행되었습니다. 다시 올리지 말고 아래 알림 결과를 확인하세요.</p></section>` : ""}
-    <section class="panel" id="delivery-result"><h2>${esc(date)} 알림 결과</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${result}
+    ${published ? `<section class="panel"><p class="notice">${esc(published.date)} 보고서를 등록했습니다. 현재 v${revision} · 주소: <a href="/reports/${published.date}">${esc(basePath)}/${published.date}</a></p><p>이 날짜는 이미 발행되었습니다. 변경 사항이 있으면 아래 ‘수정본으로 재발행’을 선택하세요. 기존 버전과 진행 상태·메모는 유지됩니다.</p>${published.changeReason ? `<p>재발행 사유: ${esc(published.changeReason)}</p>` : ""}</section>` : ""}
+    <section class="panel" id="delivery-result"><h2>${esc(date)} · v${revision} 알림 결과</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${result}
     <p class="hint">전송 완료는 Discord가 메시지 생성을 확인한 건수입니다. 대기 0건만으로 전송 성공을 뜻하지 않습니다. 결과 불명·실패가 있으면 운영자가 확인해야 합니다.</p>
     <div class="row"><a class="button secondary small" href="/reports/upload${published ? `?published=${published.date}` : ""}#delivery-result">알림 결과 새로고침</a>${formButton("/reports/notify", channelId ? "오늘 보고서 채널 게시·대기 처리" : "남은 알림 처리", "", "secondary small")}</div>
-    <p class="hint">${channelId ? "설정된 서버 채널에 하루 한 번 게시합니다. 전체 보고서는 구독 승인이 필요합니다. " : ""}전송 결과가 불확실한 메시지는 중복 발송하지 않습니다. 과거 보고서는 업로드해도 알림을 보내지 않습니다.</p></section>
+    <p class="hint">각 버전의 알림은 수신 대상별로 한 번 보냅니다. 수정본의 알림은 이전 버전과 별도로 집계됩니다. ${channelId ? "전체 보고서는 구독 승인이 필요합니다. " : ""}전송 결과가 불확실한 메시지는 중복 발송하지 않습니다. 과거 보고서는 업로드해도 알림을 보내지 않습니다.</p></section>
     <section class="panel"><h2>보고서 입력</h2><form action="/reports/upload/preview" method="post" enctype="multipart/form-data">
     <label>발행일<input type="date" name="date" required value="${today}" max="${today}"></label>
     <label>보고서 제목<input name="title" required maxlength="150" placeholder="${personal ? "개인 데일리 브리핑" : "겜마루 일일 지원 정보"}"></label>
     <label>목록과 ${target}에 표시할 요약<input name="summary" maxlength="500" placeholder="핵심 기회와 추천 행동을 2~3문장으로 적어 주세요"></label><p class="hint">${target} 알림에는 제목과 이 요약을 함께 보냅니다. 요약이 길면 300자까지 표시합니다.</p>
     <label>HTML 파일<input name="html" type="file" accept=".html,.htm,text/html"></label>
     <details class="html-paste"><summary>파일 대신 HTML 내용 붙여넣기</summary><label>HTML 전체 내용<textarea name="htmlText" rows="12" spellcheck="false" placeholder="&lt;!doctype html&gt;부터 문서 끝까지 붙여넣으세요."></textarea></label></details>
-    <p class="hint">파일과 붙여넣기 중 하나만 사용하세요. UTF-8 HTML, 최대 2MB. Design.md 스타일을 포함하며 기존 날짜는 덮어쓰지 않습니다.</p>
+    <p class="hint">파일과 붙여넣기 중 하나만 사용하세요. UTF-8 HTML, 최대 2MB. Design.md 스타일을 포함해 주세요.</p>
+    <label><input name="reissue" type="checkbox" value="yes">이미 발행한 날짜의 수정본으로 재발행</label>
+    <label>재발행 사유 (수정본일 때 필수)<input name="changeReason" maxlength="300" placeholder="변경된 조사 조건·지침 반영, 잘못된 정보 정정 등"></label>
+    <p class="hint">재발행하면 같은 URL에서 최신 내용을 봅니다. 이전 HTML과 진행 기록은 보관하며, 알림을 켜면 수정본 안내를 한 번 더 보냅니다. 정기 실행에서는 임의로 재발행하지 마세요.</p>
     <label><input name="notify" type="checkbox" value="yes" checked>${channelId ? "오늘 보고서의 제목·요약·링크를 Discord 서버 채널에 게시하기" : personal ? "오늘 보고서의 요약·링크를 내 Discord DM으로 받기" : "오늘 보고서라면 승인·알림 동의한 구독자에게 요약·링크 DM 보내기"}</label><button class="button">HTML 미리보기</button></form></section>
     <div class="row"><a class="button secondary small" href="/reports/upload?guide=1#context">조사 대상 정보</a><a class="button secondary small" href="/reports/upload?guide=1#design">Design.md</a><a class="button secondary small" href="/reports/upload?guide=1#research-state">이전 보고·진행 기록</a><a class="button secondary small" href="/reports/upload?guide=1#instructions">dots 운영 지침</a></div>`, role, personal)
     .replace("</head>", "<style>.report-reader>.topbar{display:flex}.notification-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:24px 0}.notification-counts div{padding:12px;background:var(--navy);border:1px solid var(--line)}.notification-counts dt{font-size:14px}.notification-counts dd{margin:4px 0 0;font-size:22px;font-weight:700}.html-paste{margin:20px 0}.html-paste summary{cursor:pointer;text-decoration:underline}.html-paste textarea{font-family:monospace;font-size:16px;min-width:0;max-width:100%}</style></head>");
 }
 export function preview(draft, role, personal = false) {
   const manifestNotice = draft.manifest ? `<p>진행 관리에 연결할 항목 ${draft.manifest.opportunities.length}개 · 조사 기준 버전 ${draft.manifest.stateVersion}</p><ul>${draft.manifest.opportunities.map((item) => `<li>${esc(item.title)} · ${esc(item.id)}</li>`).join("")}</ul>` : '<p class="notice">진행 항목 데이터가 없는 HTML입니다. 본문은 발행되지만 상태·메모 관리에는 연결되지 않습니다.</p>';
-  const controls = `<section class="panel"><p class="notice">아직 발행하지 않았습니다. 아래 HTML의 내용과 원문 링크를 검토해 주세요. 미리보기는 30분간 유효합니다.</p>${manifestNotice}<form method="post" action="/reports/upload/publish">${hidden("draft", draft.id)}<label><input type="checkbox" name="confirmed" value="yes" required>내용을 확인했고 보고서 등록에 동의합니다.</label><button class="button">이 HTML 등록하기</button></form></section>`;
+  const controls = `<section class="panel"><p class="notice">아직 발행하지 않았습니다. 아래 HTML의 내용과 원문 링크를 검토해 주세요. 미리보기는 30분간 유효합니다.</p>${draft.reissue ? `<p class="notice">수정본 v${draft.baseRevision + 1}로 재발행합니다. 기존 v${draft.baseRevision}와 진행 기록은 보관합니다.</p><p>사유: ${esc(draft.changeReason)}</p><p>수정본 알림: ${draft.notify ? "신청됨" : "보내지 않음"}</p>` : ""}${manifestNotice}<form method="post" action="/reports/upload/publish">${hidden("draft", draft.id)}<label><input type="checkbox" name="confirmed" value="yes" required>내용을 확인했고 보고서 등록에 동의합니다.</label><button class="button">${draft.reissue ? "이 수정본 재발행하기" : "이 HTML 등록하기"}</button></form></section>`;
   const frame = `<iframe title="업로드한 HTML 미리보기" src="/reports/upload/preview/${draft.id}/html?reading=1" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" style="display:block;width:100%;height:65vh;border:1px solid var(--line)"></iframe>`;
   return page("HTML 미리보기", hero('PREVIEW <span>BRIEF.</span>', draft.title, draft.date, personal) + controls + frame, role, personal);
 }

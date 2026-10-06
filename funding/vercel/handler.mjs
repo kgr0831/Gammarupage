@@ -14,6 +14,7 @@ import { reportChannel, allowedMember, isPersonal } from "./access.mjs";
 import { profileFields, profileForm, personalContext, savePersonalProfile } from "./personal-profile.mjs";
 import { requirePersonalSession, requireLinkRevision, bindPersonalDiscord, cancelPersonalNotices } from "./personal-account.mjs";
 import { reportBasePath, reportCookieName, reportLink, mountedPage, mountedTarget } from "./paths.mjs";
+import { reportRevision } from "./report-versions.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const security = {
@@ -273,7 +274,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
             ]);
             return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role));
           }
-          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal));
+          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal, basePath));
         }
         if (Object.hasOwn(sourceFiles, pathname.slice("/reports/".length)) && request.method === "GET") return send(await source(pathname.slice("/reports/".length), data), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
@@ -301,7 +302,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           check(!personal || manifest?.audience === "personal", "개인 보고서 지침의 audience: personal과 category를 포함해 주세요.");
           check(personal || manifest?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.");
           validateResearchState(data, manifest);
-          const draft = await store.stage({ date: textField(form, "date"), title: textField(form, "title"), summary: textField(form, "summary"), html, notify: textField(form, "notify") === "yes" }, sessionHash, today);
+          const draft = await store.stage({ date: textField(form, "date"), title: textField(form, "title"), summary: textField(form, "summary"), html, notify: textField(form, "notify") === "yes", reissue: textField(form, "reissue") === "yes", changeReason: textField(form, "changeReason") }, sessionHash, today);
           return send(view.preview(draft, session.role, personal));
         }
         if (pathname === "/reports/upload/publish" && request.method === "POST") {
@@ -342,8 +343,14 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal, personalAccountMode ? view.personalOverview(linkedMember) : ""));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);
       check(reportMatch && request.method === "GET", "페이지를 찾을 수 없습니다.", 404);
-      const report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);
+      let report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);
       if (reportMatch[2]) {
+        if (url.searchParams.has("revision")) {
+          const requested = url.searchParams.get("revision");
+          check(/^[1-9]\d*$/.test(requested), "보고서 버전을 확인해 주세요.");
+          report = [report, ...(report.previousVersions || [])].find((entry) => reportRevision(entry) === Number(requested));
+          check(report, "해당 보고서 버전을 찾을 수 없습니다.", 404);
+        }
         const html = await store.html(report);
         return new Response(url.searchParams.get("reading") === "1" ? readableReport(html) : html, { headers: { ...htmlSecurity, "Content-Type": "text/html; charset=utf-8", "Content-Disposition": `inline; filename="gammaru-${report.date}.html"` } });
       }

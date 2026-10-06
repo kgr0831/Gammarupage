@@ -1,5 +1,6 @@
 import { digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
+import { reportRevision, currentDeliveryReport } from "./report-versions.mjs";
 import { reportChannel, allowedMember, reportRecipient, isPersonal } from "./access.mjs";
 
 function briefText(value, limit) {
@@ -12,7 +13,7 @@ export function formatBriefMessage(report, origin, basePath = "/reports") {
   const title = briefText(report.title, 150);
   const personal = report.audience === "personal";
   const summary = briefText(report.summary || "", 300) || (personal ? "오늘의 개발·AI·IT 공모전과 채용 정보를 확인하세요." : "오늘 확인한 외부 후원·운영자금·유용한 정보를 보고서에서 확인하세요.");
-  return `📰 ${personal ? "개인" : "겜마루"} 데일리 브리핑 · ${report.date.replaceAll("-", ".")}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}${basePath}/${report.date}`;
+  return `📰 ${personal ? "개인" : "겜마루"} 데일리 브리핑 · ${report.date.replaceAll("-", ".")}${reportRevision(report) > 1 ? ` · 수정본 v${reportRevision(report)}` : ""}\n\n**${title}**\n\n${summary}\n\n전체 보고서 보기\n${origin}${basePath}/${report.date}`;
 }
 
 export function formatMemberNotice(field, origin, personal = false, basePath = "/reports") {
@@ -77,7 +78,7 @@ async function deliverMemberNotice(store, config, memberId, noticeId, field, fet
 export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs = 45000) {
   const channelId = reportChannel(config);
   if (!config.discordBotToken || (channelId ? !/^\d{17,20}$/.test(channelId) : !config.dmEnabled)) return;
-  const eligible = (row, state) => (!isPersonal(config) || state.reports.find((r) => r.date === row.date)?.audience === "personal") && (channelId ? row.channelId === channelId : !row.channelId && reportRecipient(state.members[row.memberId], config, state));
+  const eligible = (row, state) => !!currentDeliveryReport(state, row) && (!isPersonal(config) || currentDeliveryReport(state, row).audience === "personal") && (channelId ? row.channelId === channelId : !row.channelId && reportRecipient(state.members[row.memberId], config, state));
   const end = Date.now() + budgetMs;
   const api = (path, body) => fetcher(`https://discord.com/api/v10${path}`, {
     method: body === undefined ? "GET" : "POST", signal: AbortSignal.timeout(10000), redirect: "error",
@@ -119,7 +120,7 @@ export async function deliverBriefLinks(store, config, fetcher = fetch, budgetMs
       if (!/^\d{17,20}$/.test(channel.id || "")) { await finish("failed"); continue; }
       if (channelId && (channel.id !== channelId || ![0, 5].includes(channel.type) || !/^\d{17,20}$/.test(channel.guild_id || ""))) { await finish("failed"); continue; }
       const data = await store.read();
-      const report = data.reports.find((r) => r.date === claimed.date);
+      const report = currentDeliveryReport(data, claimed);
       if (!report || !eligible(claimed, data) || today !== seoulClock().date) { await finish("cancelled"); continue; }
       messageStarted = true;
       const sent = await api(`/channels/${channel.id}/messages`, {

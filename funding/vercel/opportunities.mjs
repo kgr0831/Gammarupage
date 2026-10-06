@@ -1,4 +1,5 @@
 import { check } from "../schema.mjs";
+import { reportRevision } from "./report-versions.mjs";
 
 export const progressLabels = { new: "검토 전", deferred: "보류", in_progress: "진행 중", completed: "진행 완료", dismissed: "안함" };
 export const categoryLabels = { contest: "공모전", trading: "미국 주식·ETF", job: "채용공고", support: "동아리 지원 정보" };
@@ -132,6 +133,6 @@ export function researchState(state, personal = false) {
     legacyIds: personal ? known.filter((item) => !Object.hasOwn(personalCategoryLabels, item.category)).map((item) => item.id) : [],
     excludedUnlessChangedIds: known.filter((item) => terminal.has(item.status)).map((item) => item.id),
     known,
-    previousReports: state.reports.map(({ date, title, summary, opportunities, audience }) => ({ date, title, summary, audience: audience || "club", opportunityIds: opportunities?.map((item) => item.id) ?? [] })).sort((a, b) => b.date.localeCompare(a.date)),
+    previousReports: state.reports.map((report) => ({ date: report.date, title: report.title, summary: report.summary, revision: reportRevision(report), updatedAt: report.updatedAt || report.createdAt, changeReason: report.changeReason || "", audience: report.audience || "club", opportunityIds: report.opportunities?.map((item) => item.id) ?? [] })).sort((a, b) => b.date.localeCompare(a.date)),
   };
 }

@@ -1,5 +1,6 @@
 import { esc, hidden } from "../portal/views.mjs";
 import { progressLabels, categoryLabels, personalCategoryLabels } from "./opportunities.mjs";
+import { reportRevision } from "./report-versions.mjs";
 
 const buttonLabels = { deferred: "보류", in_progress: "진행 중", completed: "완료", dismissed: "안함" };
 const editable = (role) => ["admin", "member"].includes(role);
@@ -49,12 +50,13 @@ export function reportOverview(report, role, opportunities, focused, filter) {
     return { ...item, status: progress.status || "new", note: progress.note || "", revision: progress.revision || 0 };
   });
   const visible = items.filter((item) => !filter || item.status === filter);
+  const versions = report.previousVersions?.length ? `<details class="edition-summary"><summary>수정 이력 · 현재 v${reportRevision(report)}</summary><p>이번 변경: ${esc(report.changeReason)}</p><ul>${[...report.previousVersions].reverse().map((entry) => `<li><a href="/reports/${report.date}/html?revision=${reportRevision(entry)}&amp;reading=1" target="_blank" rel="noopener noreferrer">이전 v${reportRevision(entry)} 원문 보기</a> · ${esc(entry.changeReason || "최초 발행")}</li>`).join("")}</ul><p>이전 원문은 발행 당시 내용이며 진행 상태와 메모는 현재 기록으로 유지됩니다.</p></details>` : "";
   const emptyMessage = Array.isArray(report.opportunities) ? "이번 보고서에는 등록된 기회가 없습니다. 전체 보고서에서 조사 결과를 확인하세요." : "이전 형식의 보고서입니다. 아래에서 전체 내용을 읽을 수 있습니다.";
   const fullReport = `<details class="full-report" id="full-report" ${items.length ? "" : "open"}><summary>전체 보고서 읽기 <span>조사 범위와 근거까지 자세히</span></summary><p><a href="/reports/${report.date}/html?reading=1" target="_blank" rel="noopener noreferrer">본문만 새 탭에서 열기 ↗</a> · <a href="/reports/${report.date}/html" target="_blank" rel="noopener noreferrer">원본 보기 ↗</a></p><iframe class="reader-frame" loading="lazy" title="${esc(report.title)}" src="/reports/${report.date}/html?reading=1" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe></details>`;
   return `<header class="overview-nav"><a href="/reports">← 전체 보고서 목록</a><a href="/reports/progress">전체 진행 현황 ↗</a><span>${report.audience === "personal" ? "PERSONAL BRIEF" : "GAMMARU"}</span></header>
     <section class="overview-heading"><p class="overview-date"><time datetime="${report.date}">${report.date.replaceAll("-", ".")}</time> · 데일리 브리핑</p><h1>${esc(report.title)}</h1>${report.summary ? `<details class="edition-summary"><summary>오늘의 요약 보기</summary><p class="overview-summary">${esc(report.summary)}</p></details>` : ""}</section>
     ${items.length ? `${statusFilters(items, `/reports/${report.date}`, filter)}<div class="list-heading"><h2>오늘의 기회 <span>${visible.length}건</span></h2><p>${report.audience === "personal" ? "개인 기록" : "동아리 공유"} · 상태 버튼을 누르면 바로 저장됩니다.</p></div><section class="opportunities" aria-label="오늘의 기회">${report.audience === "personal" ? categoryRows(visible, role, report.date, focused) : opportunityRows(visible, role, report.date, focused) || '<p class="empty">이 상태의 항목이 없습니다. 다른 상태를 눌러 보세요.</p>'}</section>` : `<p class="reader-empty">${emptyMessage}</p>`}
-    ${fullReport}`;
+    ${versions}${fullReport}`;
 }
 
 export function progressOverview(opportunities, role, filter, personal = false) {
