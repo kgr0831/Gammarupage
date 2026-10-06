@@ -356,6 +356,23 @@ try {
   assert.equal(sharedState.memberProgress["100000000000000012"][clickItem.id].note, "");
   assert.equal(sharedState.opportunities[clickItem.id].status, "in_progress");
   for (const context of readerContexts) await context.close();
+  // Start with no cookies or browser storage. Only Discord identity is reused.
+  for (const [discordId, expected, note] of [["100000000000000011", "deferred", "첫 번째 독자 메모"], [user, "in_progress", "다른 창에서 새로 저장한 메모"]]) {
+    mountedDiscordId = discordId;
+    const fresh = await browser.newContext({ viewport: { width: 320, height: 950 } });
+    assert.deepEqual(await fresh.storageState(), { cookies: [], origins: [] });
+    const reader = await fresh.newPage();
+    await reader.goto(`${app.config.origin}/personal`);
+    await reader.getByRole("link", { name: "Discord로 로그인 →", exact: true }).click();
+    await reader.locator(".archive-row").click();
+    const row = reader.locator(`#progress-${clickItem.id}`);
+    assert.equal(await row.getAttribute("data-status"), expected);
+    assert.equal(await row.locator('textarea[name="note"]').inputValue(), note);
+    await reader.getByLabel("진행 기록 계정").getByText("개인 검증 계정 · 내 진행 기록", { exact: true }).waitFor();
+    assert.equal(await reader.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await reader.screenshot({ path: path.join(output, `personal-account-synced-${expected}.png`), fullPage: true });
+    await fresh.close();
+  }
   mountedEnv.PERSONAL_DISCORD_REPORT_CHANNEL_ID = "300000000000000002";
   mountedEnv.DISCORD_BOT_TOKEN = "mock-channel-bot";
   await sharedPage.goto(`${app.config.origin}/personal/account`);

@@ -344,10 +344,11 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       const privateReader = sharedPersonal && !admin;
       const viewRole = privateReader ? "reader" : session.role;
       const opportunities = privateReader ? memberOpportunities(data, member.id) : data.opportunities;
+      const progressAccount = personal ? member || linkedMember : null;
       if (pathname === "/reports/progress" && request.method === "GET") {
         const filter = url.searchParams.get("status") || "";
         check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
-        return send(view.progressPage(opportunities, viewRole, filter, personal));
+        return send(view.progressPage(opportunities, viewRole, filter, personal, progressAccount));
       }
       const progressMatch = pathname.match(/^\/reports\/opportunities\/([a-z0-9-]{3,80})\/status$/);
       if (progressMatch && request.method === "POST") {
@@ -385,7 +386,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       }
       const filter = url.searchParams.get("status") || "";
       check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
-      return send(view.viewer(report, viewRole, opportunities, url.searchParams.get("progress") || "", filter));
+      return send(view.viewer(report, viewRole, opportunities, url.searchParams.get("progress") || "", filter, progressAccount));
     } catch (error) {
       return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports/upload?guide=1">최신 조사 자료 확인</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a> <a class="button secondary" href="/reports">보고서 목록</a></section>`, "guest", personal), error.status || 503);
     }

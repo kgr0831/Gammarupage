@@ -101,6 +101,28 @@ test("reader statuses and notes stay isolated across accounts, preserve stale-cl
   assert.equal((await app.request("/personal/opportunities/unknown-fixture/status", a, { revision: "0", status: "completed" })).status, 404);
 });
 
+test("owner and reader records follow their Discord login across fresh sessions and storage instances", async () => {
+  const app = await fixture(), owner = await app.login(ownerId), reader = await app.login(alice);
+  const endpoint = `/personal/opportunities/${item.id}/status`;
+  assert.equal((await app.request(endpoint, owner, { revision: "1", status: "completed", date: today })).status, 303);
+  assert.equal((await app.request(endpoint, reader, { revision: "0", status: "in_progress", note: "Reader server note", date: today })).status, 303);
+  await app.request("/personal/logout", owner, {}); await app.request("/personal/logout", reader, {});
+  const persisted = await new BriefStore(app.store.files, "personal/briefs").read();
+  assert.equal(persisted.opportunities[item.id].status, "completed");
+  assert.equal(persisted.memberProgress[alice][item.id].status, "in_progress");
+  const ownerAgain = await app.login(ownerId), readerAgain = await app.login(alice);
+  for (const [cookie, account, status, note, forbidden] of [[ownerAgain, ownerId, "completed", privateNote, "Reader server note"], [readerAgain, alice, "in_progress", "Reader server note", privateNote]]) {
+    for (const path of [`/personal/${today}`, "/personal/progress"]) {
+      const response = await app.request(path, cookie), page = await response.text();
+      assert.equal(response.headers.get("cache-control"), "private, no-store");
+      assert.ok(page.includes(`Reader ${account} · 내 진행 기록`));
+      assert.match(page, /같은 계정이면 다른 기기에서도/);
+      assert.ok(page.includes(`id="progress-${item.id}" data-status="${status}"`));
+      assert.ok(page.includes(note)); assert.ok(!page.includes(forbidden));
+    }
+  }
+});
+
 test("readers cannot view or mutate the owner's private research, profile, uploads or Discord binding", async () => {
   const app = await fixture(), cookie = await app.login(alice), before = await app.store.read();
   for (const path of ["/personal/profile", "/personal/research-state", "/personal/context", "/personal/upload?guide=1", "/personal/instructions", "/personal/design"]) {

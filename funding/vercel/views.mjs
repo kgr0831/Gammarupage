@@ -42,11 +42,15 @@ export function personalAccount(member, revision, configured, search, applicatio
 function readingPage(title, content, role, personal = false) {
   return page(title, content, role, personal).replace("</head>", '<style>' + readerShellStyles + '</style></head>').replace("<body>", '<body class="report-reader">');
 }
-export function viewer(report, role, opportunities = {}, focused = "", filter = "") {
-  return readingPage(report.title, reportOverview(report, role, opportunities, focused, filter), role, report.audience === "personal");
+export function progressIdentity(member) {
+  if (!member) return "";
+  return `<aside class="progress-account" aria-label="진행 기록 계정"><strong>${esc(member.display_name || member.name || member.username)} · 내 진행 기록</strong><p>상태와 메모는 이 Discord 계정으로 서버에 저장됩니다. 같은 계정이면 다른 기기에서도 이어서 볼 수 있습니다.</p></aside><style>.progress-account{margin:0 0 24px;padding:16px 20px;border:1px solid var(--line);border-left:3px solid var(--pink);font-size:16px;line-height:1.7;overflow-wrap:anywhere}.progress-account p{margin:6px 0 0}</style>`;
 }
-export function progressPage(opportunities, role, filter = "", personal = false) {
-  return readingPage("진행 현황", progressOverview(opportunities, role, filter, personal), role, personal);
+export function viewer(report, role, opportunities = {}, focused = "", filter = "", account = null) {
+  return readingPage(report.title, progressIdentity(account) + reportOverview(report, role, opportunities, focused, filter), role, report.audience === "personal");
+}
+export function progressPage(opportunities, role, filter = "", personal = false, account = null) {
+  return readingPage("진행 현황", progressIdentity(account) + progressOverview(opportunities, role, filter, personal), role, personal);
 }
 export function publisherGuide({ instructions, design, context, research, today }, role, channelMode = false) {
   const source = (id, title, text) => `<section class="panel guide-section" id="${id}"><h2>${title}</h2><pre>${esc(text)}</pre></section>`;
