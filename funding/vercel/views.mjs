@@ -3,8 +3,17 @@ import { readerShellStyles } from "./reader.mjs";
 import { reportOverview, progressOverview } from "./progress-views.mjs";
 import { reportRevision } from "./report-versions.mjs";
 export function page(title, content, role = "guest", personal = false) {
-  const nav = role === "admin" ? `<a href="/reports">${personal ? "개인 개요" : "보고서 목록"}</a><a href="/reports/progress">진행 관리</a><a href="/reports/upload">HTML 업로드</a>${personal ? '<a href="/reports/account">Discord 연결</a>' : '<a href="/reports/admin">구독 승인</a>'}` : role === "publisher" ? '<a href="/reports/upload">HTML 업로드</a>' : '<a href="/reports">보고서 목록</a><a href="/reports/progress">진행 현황</a><a href="/reports/account">구독 설정</a>';
+  const nav = role === "admin" ? `<a href="/reports">${personal ? "개인 개요" : "보고서 목록"}</a><a href="/reports/progress">진행 관리</a><a href="/reports/upload">HTML 업로드</a>${personal ? '<a href="/reports/account">Discord 연결</a>' : '<a href="/reports/admin">구독 승인</a>'}` : role === "publisher" ? '<a href="/reports/upload">HTML 업로드</a>' : `<a href="/reports">보고서 목록</a><a href="/reports/progress">진행 현황</a><a href="/reports/account">${role === "reader" || (personal && role === "guest") ? "내 계정" : "구독 설정"}</a>`;
   return layout(title, content, role, nav + (personal && ["admin", "member"].includes(role) ? '<a href="/reports/profile">내 조사 조건</a>' : ""), personal).replace('action="/members/logout"', 'action="/reports/logout"').replace("</head>", "<style>.topbar nav{flex-wrap:wrap;min-width:0}</style></head>");
+}
+export function sharedLogin(configured) {
+  return page("데일리 브리핑 로그인", `${hero('DAILY <span>BRIEF.</span>', "개발·AI·IT 공모전과 채용공고를 매일 확인하세요.", "", true)}<section class="panel narrow"><h2>Discord로 바로 시작하기</h2><p>별도 승인 없이 Discord 로그인만 하면 오늘 보고서와 지난 보고서를 볼 수 있습니다.</p><p>진행 상태와 메모는 내 계정에만 저장됩니다.</p>${configured ? '<a class="button" href="/reports/auth/discord">Discord로 로그인 →</a>' : '<p class="notice">Discord 로그인을 준비 중입니다.</p>'}</section>`, "guest", true);
+}
+export function readerOverview() {
+  return '<section class="panel"><h2>함께 보는 데일리 스크럼</h2><p>공모전·채용 보고서를 함께 보고, 진행 상태와 메모는 나만의 기록으로 관리합니다.</p><p class="hint">보고서는 운영자의 조사 기준으로 작성됩니다. 내 기록은 다른 사람의 화면이나 운영자의 다음 조사에 반영되지 않습니다.</p><a class="button secondary" href="/reports/progress">내 진행 현황 →</a></section>';
+}
+export function readerAccount(member) {
+  return page("내 계정", `<section class="panel narrow"><h1>내 Discord 계정</h1>${profile(member)}<p class="notice">로그인되었습니다. 별도 승인 없이 보고서를 볼 수 있습니다.</p><p>진행 상태와 메모는 이 Discord 계정에 저장되며 다른 사람에게 보이지 않습니다.</p><p class="hint">로그인은 이 브라우저에서 30일간 유지됩니다.</p><a class="button" href="/reports">보고서 목록 열기 →</a></section>`, "reader", true);
 }
 export function login(type, configured, channelMode = false, personal = false) {
   const heading = hero('DAILY <span>ARCHIVE.</span>', personal ? "개발·AI·IT 공모전과 채용공고를 모아 보는 개인 보고서입니다." : "겜마루의 외부 후원·운영자금·유용한 정보를 모아 둔 보고서 보관함입니다.", "", personal);

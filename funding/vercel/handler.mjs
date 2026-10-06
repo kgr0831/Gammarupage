@@ -12,7 +12,8 @@ import { researchState, parseManifest, manifestFromHtml, progressLabels, validat
 import { handleWorkerJob, notificationTransportReady, workerMode } from "./worker-jobs.mjs";
 import { reportChannel, allowedMember, isPersonal } from "./access.mjs";
 import { profileFields, profileForm, personalContext, savePersonalProfile } from "./personal-profile.mjs";
-import { requirePersonalSession, requireLinkRevision, bindPersonalDiscord, cancelPersonalNotices } from "./personal-account.mjs";
+import { requirePersonalSession, requireLinkRevision, bindPersonalDiscord, cancelPersonalNotices, validDiscordOwnerSession } from "./personal-account.mjs";
+import { memberOpportunities } from "./member-progress.mjs";
 import { reportBasePath, reportCookieName, reportLink, mountedPage, mountedTarget } from "./paths.mjs";
 import { reportRevision } from "./report-versions.mjs";
 
@@ -59,13 +60,20 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
     const cookie = (name, value, maxAge) => `${name}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${config.secure ? "; Secure" : ""}`;
     const sessionHash = digest(cookies[cookieName] || "");
     const proof = (role) => role === "admin" ? digest([config.adminUsername, config.token]) : role === "publisher" ? digest(config.publisherToken) : "discord";
-    async function signIn(role, subject) {
+    async function signIn(role, subject, discordLogin = false) {
       const token = randomBytes(32).toString("hex");
       const age = role === "admin" && config.service !== "personal" ? 43200 : 30 * 86400;
-      await store.update((s) => { delete s.sessions[sessionHash]; s.sessions[digest(token)] = { role, subject, proof: proof(role), expires: Date.now() + age * 1000 }; });
+      await store.update((s) => {
+        const owner = discordLogin && s.personalAccount?.discordId === subject;
+        const grantedRole = owner ? "admin" : role;
+        delete s.sessions[sessionHash];
+        s.sessions[digest(token)] = { role: grantedRole, subject, proof: proof(grantedRole), expires: Date.now() + age * 1000,
+          ...(owner ? { discordOwnerId: subject } : {}) };
+      });
       headers.append("Set-Cookie", cookie(cookieName, token, age));
     }
     const personal = isPersonal(config), personalAccountMode = config.service === "personal";
+    const sharedPersonal = personalAccountMode && config.discordLoginReaders;
     const sourceFiles = {
       instructions: () => personal ? readFile(path.join(process.cwd(), "docs/dots-personal-brief.md"), "utf8") : readFile(path.join(process.cwd(), "docs/dots-daily-brief.md"), "utf8"),
       design: () => personal ? readFile(path.join(process.cwd(), "docs/personal-Design.md"), "utf8") : readFile(path.join(process.cwd(), "Design.md"), "utf8"),
@@ -100,10 +108,10 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       if (pathname === "/reports/session" && request.method === "GET" && !cookies[cookieName]) return send(JSON.stringify({ authenticated: false }), 200, "application/json; charset=utf-8");
       const data = await store.read();
       const savedSession = data.sessions[sessionHash];
-      const session = savedSession?.expires > Date.now() && savedSession.proof === proof(savedSession.role) ? savedSession : null;
+      const session = savedSession?.expires > Date.now() && savedSession.proof === proof(savedSession.role) && validDiscordOwnerSession(data, savedSession) ? savedSession : null;
       const member = session?.role === "member" ? data.members[session.subject] : null;
       const admin = session?.role === "admin", publisher = admin || session?.role === "publisher";
-      const readable = admin || (!personalAccountMode && member?.status === "approved" && allowedMember(member, config, data));
+      const readable = admin || (member?.status === "approved" && (sharedPersonal || (!personalAccountMode && allowedMember(member, config, data))));
       const linkedMember = personalAccountMode ? data.members[data.personalAccount?.discordId] : null;
       const today = seoulClock(now()).date;
       const oauthConfigured = !!(config.discordApplicationId && config.discordClientSecret);
@@ -125,15 +133,16 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         await signIn(type, type); return redirect(type === "admin" ? personalAccountMode ? "/reports" : "/reports/admin" : "/reports/upload");
       }
       if (pathname === "/reports/auth/discord") {
+        const readerLogin = sharedPersonal && request.method === "GET";
         if (personalAccountMode) {
-          if (request.method === "GET") return redirect(admin ? "/reports/account" : "/reports/login/admin");
-          check(admin, "개인 계정으로 먼저 로그인해 주세요.", 403);
+          if (!readerLogin && request.method === "GET") return redirect(admin ? "/reports/account" : "/reports/login/admin");
+          check(readerLogin || admin, "개인 계정으로 먼저 로그인해 주세요.", 403);
         } else check(request.method === "GET", "GET required.", 405);
         check(oauthConfigured, "Discord 로그인을 준비 중입니다.", 503);
         const state = randomBytes(32).toString("hex");
         await store.update((s) => {
-          if (personalAccountMode) requirePersonalSession(s, sessionHash, proof("admin"));
-          s.oauth[digest(state)] = { expires: Date.now() + 600000, ...(personalAccountMode ? { sessionHash, proof: proof("admin"), revision: s.personalAccount?.revision || 0 } : {}) };
+          if (personalAccountMode && !readerLogin) requirePersonalSession(s, sessionHash, proof("admin"));
+          s.oauth[digest(state)] = { expires: Date.now() + 600000, ...(readerLogin ? { purpose: "reader-login" } : personalAccountMode ? { sessionHash, proof: proof("admin"), revision: s.personalAccount?.revision || 0 } : {}) };
         });
         headers.append("Set-Cookie", cookie(stateName, state, 600));
         return redirect(`https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: config.discordApplicationId, scope: "identify", response_type: "code", state, redirect_uri: callbackUrl })}`);
@@ -145,13 +154,14 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         const linkRequest = await store.update((s) => {
           const pending = s.oauth[digest(state)];
           check(pending?.expires > Date.now(), "로그인이 만료되었습니다. 다시 로그인해 주세요.", 403);
-          if (personalAccountMode) {
+          if (personalAccountMode && !(sharedPersonal && pending.purpose === "reader-login")) {
             requirePersonalSession(s, sessionHash, proof("admin"));
             check(pending.sessionHash === sessionHash && pending.proof === proof("admin"), "연결을 시작한 개인 로그인에서 다시 시도해 주세요.", 403);
             requireLinkRevision(s, pending.revision);
           }
           delete s.oauth[digest(state)]; return pending;
         });
+        const readerLogin = sharedPersonal && linkRequest.purpose === "reader-login";
         headers.append("Set-Cookie", cookie(stateName, "", 0));
         let user;
         try {
@@ -166,7 +176,13 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         check(personalAccountMode || allowedMember(user, config, data), "이 보고서는 소유자 전용입니다. 등록된 Discord 계정으로 로그인해 주세요.", 403);
         const noticeId = randomBytes(16).toString("hex");
         const notice = await store.update((s) => {
-          const m = personalAccountMode ? bindPersonalDiscord(s, user, sessionHash, proof("admin"), linkRequest.revision) : (s.members[user.id] = { name: "", status: "new", dm_opt_in: false, ...s.members[user.id], ...user });
+          const m = personalAccountMode && !readerLogin ? bindPersonalDiscord(s, user, sessionHash, proof("admin"), linkRequest.revision) : (s.members[user.id] = { name: "", status: "new", dm_opt_in: false, ...s.members[user.id], ...user });
+          if (readerLogin) {
+            m.name ||= user.display_name.replace(/[\x00-\x1f]/g, "").trim().slice(0, 60) || user.username;
+            m.status = "approved";
+            if (s.personalAccount?.discordId !== user.id) m.dm_opt_in = false;
+            return null;
+          }
           if (m.status === "new") {
             m.name ||= user.display_name.replace(/[\x00-\x1f]/g, "").trim().slice(0, 60) || user.username;
             m.status = personal ? "approved" : "pending"; m.dm_opt_in = true;
@@ -176,9 +192,15 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           m.login_notice = { id: noticeId, createdAt: Date.now(), status: transportReady ? "pending" : "unavailable" };
           return transportReady ? noticeId : null;
         });
-        if (!personalAccountMode) await signIn("member", user.id);
+        if (!personalAccountMode || readerLogin) await signIn("member", user.id, readerLogin);
         if (notice && !workerMode(config)) after(() => deliverLoginNotice(store, config, user.id, notice, fetcher).catch(() => console.error("Login notification requires review.")));
-        return redirect("/reports/account?welcome=1");
+        return redirect(readerLogin ? "/reports" : "/reports/account?welcome=1");
+      }
+      if (sharedPersonal && !admin && ["/reports/account", "/reports/subscription", "/reports/unsubscribe", "/reports/account/confirmation"].includes(pathname)) {
+        if (!member && request.method === "GET") return send(view.sharedLogin(oauthConfigured));
+        check(readable, "Discord로 로그인해 주세요.", 403);
+        check(pathname === "/reports/account" && request.method === "GET", "개인 알림 연결은 운영자만 관리할 수 있습니다.", 403);
+        return send(view.readerAccount(member));
       }
       if (personalAccountMode && ["/reports/account", "/reports/subscription", "/reports/unsubscribe", "/reports/account/confirmation"].includes(pathname)) {
         if (!admin && request.method === "GET") return redirect("/reports/login/admin");
@@ -256,7 +278,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       }
       if (pathname === "/reports/profile") {
         check(personal, "개인 서비스에서만 조사 조건을 저장할 수 있습니다.", 404);
-        check(readable, "소유자 또는 관리자만 조사 조건을 변경할 수 있습니다.", 403);
+        check(sharedPersonal ? admin : readable, "소유자 또는 관리자만 조사 조건을 변경할 수 있습니다.", 403);
         if (request.method === "GET") return send(view.page("내 조사 조건", profileForm(data.personalProfile, url.searchParams.get("saved") === "1"), session.role, true));
         const form = await formData(request), revision = textField(form, "revision");
         check(/^\d+$/.test(revision), "조사 조건 버전을 확인해 주세요.");
@@ -314,13 +336,16 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         }
         check(false, "페이지를 찾을 수 없습니다.", 404);
       }
-      if (!session && request.method === "GET") return send(view.login(personalAccountMode ? "admin" : "member", personalAccountMode || oauthConfigured, !!channelId, personal));
+      if (!session && request.method === "GET") return send(sharedPersonal ? view.sharedLogin(oauthConfigured) : view.login(personalAccountMode ? "admin" : "member", personalAccountMode || oauthConfigured, !!channelId, personal));
       if (!personalAccountMode && member && !readable && pathname === "/reports" && request.method === "GET") return redirect("/reports/account");
       check(readable, "승인된 구독자만 보고서를 볼 수 있습니다.", 403);
+      const privateReader = sharedPersonal && !admin;
+      const viewRole = privateReader ? "reader" : session.role;
+      const opportunities = privateReader ? memberOpportunities(data, member.id) : data.opportunities;
       if (pathname === "/reports/progress" && request.method === "GET") {
         const filter = url.searchParams.get("status") || "";
         check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
-        return send(view.progressPage(data.opportunities, session.role, filter, personal));
+        return send(view.progressPage(opportunities, viewRole, filter, personal));
       }
       const progressMatch = pathname.match(/^\/reports\/opportunities\/([a-z0-9-]{3,80})\/status$/);
       if (progressMatch && request.method === "POST") {
@@ -330,7 +355,9 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         const revision = textField(form, "revision");
         check(/^\d+$/.test(revision), "진행 기록 버전을 확인해 주세요.");
         check(form.has("status") || form.has("note"), "변경할 상태나 메모가 필요합니다.");
-        await store.setProgress(progressMatch[1], { status: form.has("status") ? textField(form, "status") : undefined, note: form.has("note") ? textField(form, "note") : undefined, revision: Number(revision) }, session.subject, admin ? null : member.id, { allowStaleStatus: personalAccountMode });
+        const input = { status: form.has("status") ? textField(form, "status") : undefined, note: form.has("note") ? textField(form, "note") : undefined, revision: Number(revision) };
+        if (privateReader) await store.setMemberProgress(member.id, progressMatch[1], input);
+        else await store.setProgress(progressMatch[1], input, session.subject, admin ? null : member.id, { allowStaleStatus: personalAccountMode });
         return redirect(date ? `/reports/${date}?progress=${progressMatch[1]}#progress-${progressMatch[1]}` : `/reports/progress#progress-${progressMatch[1]}`);
       }
       const attachMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})\/opportunities$/);
@@ -340,7 +367,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         await store.attachOpportunities(attachMatch[1], parseManifest(textField(form, "manifest")));
         return redirect(`/reports/${attachMatch[1]}?progress=1`);
       }
-      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, session.role, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal, personalAccountMode ? view.personalOverview(linkedMember) : ""));
+      if (pathname === "/reports" && request.method === "GET") return send(view.archive(data.reports, viewRole, (url.searchParams.get("q") || "").slice(0, 100), Math.floor(Number(url.searchParams.get("page")) || 1), personal, privateReader ? view.readerOverview() : personalAccountMode ? view.personalOverview(linkedMember) : ""));
       const reportMatch = pathname.match(/^\/reports\/(\d{4}-\d{2}-\d{2})(\/html)?$/);
       check(reportMatch && request.method === "GET", "페이지를 찾을 수 없습니다.", 404);
       let report = data.reports.find((r) => r.date === reportMatch[1]); check(report, "보고서를 찾을 수 없습니다.", 404);
@@ -356,7 +383,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       }
       const filter = url.searchParams.get("status") || "";
       check(!filter || Object.hasOwn(progressLabels, filter), "진행 상태를 확인해 주세요.");
-      return send(view.viewer(report, session.role, data.opportunities, url.searchParams.get("progress") || "", filter));
+      return send(view.viewer(report, viewRole, opportunities, url.searchParams.get("progress") || "", filter));
     } catch (error) {
       return send(view.page("요청 확인", `<section class="panel narrow"><h1>확인이 필요합니다.</h1><p>${escapeError(error.status ? error.message : "요청을 처리하지 못했습니다. 저장소 연결을 확인해 주세요.")}</p><a class="button secondary" href="/reports/upload?guide=1">최신 조사 자료 확인</a> <a class="button secondary" href="/reports/upload">HTML 업로드</a> <a class="button secondary" href="/reports">보고서 목록</a></section>`, "guest", personal), error.status || 503);
     }

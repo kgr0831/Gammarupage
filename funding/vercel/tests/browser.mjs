@@ -248,19 +248,20 @@ try {
   await personalPage.getByText("아직 연결된 Discord 계정이 없습니다.", { exact: true }).waitFor();
   await personalContext.close();
   const mountedStore = new BriefStore(app.files, "personal/briefs");
+  let mountedDiscordId = user;
   app.handler = createSiteHandler({ env: {
     REPORTS_SITE_URL: app.config.origin, FUNDING_ADMIN_USERNAME: "club-admin", FUNDING_ADMIN_TOKEN: app.config.token,
     PERSONAL_ADMIN_USERNAME: "personal-owner", PERSONAL_ADMIN_TOKEN: app.config.publisherToken,
     PERSONAL_PUBLISHER_TOKEN: "test-publisher-".repeat(4), DISCORD_APPLICATION_ID: app.config.discordApplicationId,
     DISCORD_CLIENT_SECRET: "mock-client-secret",
-  }, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: user, username: "linked-personal", global_name: "개인 검증 계정" }) });
+  }, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: mountedDiscordId, username: "linked-personal", global_name: "개인 검증 계정" }) });
   const sharedContext = await browser.newContext(), sharedPage = await sharedContext.newPage();
   await sharedPage.goto(`${app.config.origin}/reports/login/admin`);
   await sharedPage.getByLabel("아이디", { exact: true }).fill("club-admin");
   await sharedPage.getByLabel("비밀번호", { exact: true }).fill(app.config.token);
   await sharedPage.getByRole("button", { name: "로그인", exact: true }).click();
   await sharedPage.waitForURL("**/reports/admin");
-  await sharedPage.goto(`${app.config.origin}/personal`);
+  await sharedPage.goto(`${app.config.origin}/personal/login/admin`);
   await sharedPage.getByLabel("아이디", { exact: true }).fill("personal-owner");
   await sharedPage.getByLabel("비밀번호", { exact: true }).fill(app.config.publisherToken);
   await sharedPage.getByRole("button", { name: "로그인", exact: true }).click();
@@ -325,6 +326,35 @@ try {
   const oldVersion = await sharedPage.request.get(`${app.config.origin}${oldUrl}`);
   assert.match(await oldVersion.text(), /Personal fixture v1/);
   assert.match(oldVersion.headers()["content-security-policy"], /script-src 'none'/);
+  const readerContexts = [];
+  for (const [index, discordId] of ["100000000000000011", "100000000000000012"].entries()) {
+    mountedDiscordId = discordId;
+    const context = await browser.newContext({ viewport: { width: 320, height: 950 } }); readerContexts.push(context);
+    const reader = await context.newPage();
+    await reader.goto(`${app.config.origin}/personal`);
+    assert.equal(await reader.locator('input[name="password"]').count(), 0);
+    await reader.getByRole("link", { name: "Discord로 로그인 →", exact: true }).click();
+    await reader.getByRole("heading", { name: "함께 보는 데일리 스크럼", exact: true }).waitFor();
+    assert.equal(await reader.getByRole("link", { name: "내 조사 조건", exact: true }).count(), 0);
+    await reader.locator(".archive-row").click();
+    assert.doesNotMatch(await reader.locator("body").innerText(), /다른 창에서 새로 저장한 메모|Mounted private browser fixture|첫 번째 독자 메모/);
+    const row = reader.locator(`#progress-${clickItem.id}`);
+    await row.getByRole("button", { name: index ? "완료" : "보류", exact: true }).click();
+    await row.getByText(`현재 상태 · ${index ? "진행 완료" : "보류"}`, { exact: true }).waitFor();
+    if (!index) {
+      await row.getByText("메모 추가", { exact: true }).click();
+      await row.getByLabel("나만 보는 메모", { exact: true }).fill("첫 번째 독자 메모");
+      await row.getByRole("button", { name: "메모 저장", exact: true }).click();
+    }
+    await reader.reload();
+    assert.equal(await reader.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, "Shared reader fits 320px");
+    await reader.screenshot({ path: path.join(output, `personal-shared-reader-${index}.png`), fullPage: true });
+  }
+  const sharedState = await mountedStore.read();
+  assert.equal(sharedState.memberProgress["100000000000000011"][clickItem.id].note, "첫 번째 독자 메모");
+  assert.equal(sharedState.memberProgress["100000000000000012"][clickItem.id].note, "");
+  assert.equal(sharedState.opportunities[clickItem.id].status, "in_progress");
+  for (const context of readerContexts) await context.close();
   await sharedContext.close();
-  console.log("Browser passed: club workflows, private personal profile, ID/password overview, Discord linking, saved DM settings and unlinking, same-day reissue and version history, stale personal status buttons preserving notes, desktop/mobile. Mock storage/OAuth only; no deployment or real messages.");
+  console.log("Browser passed: club workflows, private personal profile, owner settings, reissue history, stale-click safety, Discord-only sharing with two isolated readers and mobile layout. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }

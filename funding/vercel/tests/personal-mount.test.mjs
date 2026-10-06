@@ -79,7 +79,7 @@ test("same-origin personal mount has separate credentials, cookies, archive and 
   assert.match(page, /href="\/personal\/account"/); assert.match(page, /action="\/personal\/logout"/);
   assert.doesNotMatch(page, /(?:href|action|src)="\/reports/);
   const guest = await (await app.request("/personal")).text();
-  assert.match(guest, /action="\/personal\/login\/admin"/);
+  assert.match(guest, /href="\/personal\/auth\/discord"/);
   await app.request("/personal/logout", both, {});
   assert.equal((await (await app.request("/reports/session", both)).json()).authenticated, true);
   assert.equal((await (await app.request("/personal/session", both)).json()).authenticated, false);
@@ -132,7 +132,7 @@ test("mounted publishing keeps raw HTML intact, exposes private personal guide a
   assert.equal((await app.request("/personal/upload/publish", pub, { draft, confirmed: "yes" })).status, 303);
   assert.equal((await app.clubStore.read()).reports.length, 0);
   assert.equal(await (await app.request(`/personal/${today}/html`, own)).text(), raw);
-  assert.match(await (await app.request(`/personal/${today}/html`, clubPub)).text(), /개인 로그인/);
+  assert.match(await (await app.request(`/personal/${today}/html`, clubPub)).text(), /Discord로 바로 시작하기/);
   const viewer = await (await app.request(`/personal/${today}`, own)).text();
   assert.doesNotMatch(viewer, /(?:href|action|src)="\/reports/);
   const sent = [];

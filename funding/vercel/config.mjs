@@ -41,6 +41,6 @@ export function personalConfig(request, env = process.env) {
       DISCORD_REPORT_CHANNEL_ID: "", DISCORD_DM_ENABLED: "true",
       DISCORD_DELIVERY_MODE: "direct", DISCORD_WORKER_TOKEN: "",
     }),
-    basePath: "/personal", oauthCallbackPath: "/reports/auth/callback",
+    basePath: "/personal", oauthCallbackPath: "/reports/auth/callback", discordLoginReaders: true,
   };
 }

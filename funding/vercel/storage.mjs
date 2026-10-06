@@ -2,6 +2,7 @@ import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
+import { changeMemberProgress } from "./member-progress.mjs";
 import { reportRevision, deliveryKey } from "./report-versions.mjs";
 
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
@@ -147,6 +148,9 @@ export class BriefStore {
       check(!memberId || state.members[memberId]?.status === "approved", "구독 승인이 변경되어 진행 기록을 저장할 수 없습니다.", 403);
       return changeProgress(state, id, input, actor, options);
     });
+  }
+  async setMemberProgress(memberId, id, input) {
+    return this.update(state => changeMemberProgress(state, memberId, id, input));
   }
   async attachOpportunities(date, input) {
     const manifest = validateManifest(input);

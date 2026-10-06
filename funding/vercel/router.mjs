@@ -10,7 +10,7 @@ export function personalRequest(request) {
   const cookieName = `${reportCookieName({ basePath: "/personal", secure: url.protocol === "https:" })}-oauth`;
   const cookies = Object.fromEntries((request.headers.get("cookie") || "").split(";").map(value => value.trim().split("=")).filter(parts => parts.length === 2));
   // Select only the flow whose nonce matches. The handler then validates the
-  // one-time server record and original ID/password session before linking.
+  // one-time server record, and the initiating owner session for link changes.
   return /^[a-f0-9]{64}$/.test(state || "") && cookies[cookieName] === state;
 }
 

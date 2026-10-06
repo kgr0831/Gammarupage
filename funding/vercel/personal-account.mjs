@@ -1,8 +1,12 @@
 import { check } from "../schema.mjs";
 
+export function validDiscordOwnerSession(state, session) {
+  return !session.discordOwnerId || state.personalAccount?.discordId === session.discordOwnerId;
+}
+
 export function requirePersonalSession(state, sessionHash, proof) {
   const session = state.sessions[sessionHash];
-  check(session?.role === "admin" && session.expires > Date.now() && session.proof === proof, "개인 계정으로 다시 로그인해 주세요.", 403);
+  check(session?.role === "admin" && session.expires > Date.now() && session.proof === proof && validDiscordOwnerSession(state, session), "개인 계정으로 다시 로그인해 주세요.", 403);
 }
 
 export function requireLinkRevision(state, revision) {
@@ -23,6 +27,7 @@ export function bindPersonalDiscord(state, user, sessionHash, proof, revision) {
   requireLinkRevision(state, revision);
   const previous = state.personalAccount?.discordId;
   if (previous && previous !== user?.id) {
+    for (const [hash, session] of Object.entries(state.sessions)) if (session.discordOwnerId) delete state.sessions[hash];
     const old = state.members[previous];
     if (old) { old.status = "revoked"; old.dm_opt_in = false; }
     cancelPersonalNotices(state, previous);

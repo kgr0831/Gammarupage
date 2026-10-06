@@ -3,7 +3,7 @@ import { progressLabels, categoryLabels, personalCategoryLabels } from "./opport
 import { reportRevision } from "./report-versions.mjs";
 
 const buttonLabels = { deferred: "보류", in_progress: "진행 중", completed: "완료", dismissed: "안함" };
-const editable = (role) => ["admin", "member"].includes(role);
+const editable = (role) => ["admin", "member", "reader"].includes(role);
 const fields = (item, date) => hidden("revision", item.revision) + hidden("date", date);
 const endpoint = (item) => `/reports/opportunities/${esc(item.id)}/status`;
 
@@ -21,7 +21,7 @@ export function opportunityRows(items, role, date = "", focused = "") {
     const state = item.status || "new";
     const trading = item.category === "trading";
     const buttons = editable(role) ? `<form class="quick-status" method="post" action="${endpoint(item)}" aria-label="${esc(item.title)} 상태 변경">${fields(item, date)}${Object.entries(buttonLabels).map(([value, label]) => `<button type="submit" name="status" value="${value}" data-status="${value}" aria-pressed="${value === state}" ${value === state ? "disabled" : ""}>${label}</button>`).join("")}</form>` : "";
-    const note = editable(role) ? `<details class="note-editor"><summary>${item.note ? "메모 보기·수정" : "메모 추가"}</summary><form method="post" action="${endpoint(item)}">${fields(item, date)}<label>다음 조사에 반영할 메모<textarea name="note" maxlength="1000" rows="3" placeholder="보류 이유나 이미 진행한 일을 남겨 주세요.">${esc(item.note)}</textarea></label><button class="button small">메모 저장</button></form></details>` : "";
+    const note = editable(role) ? `<details class="note-editor"><summary>${item.note ? "메모 보기·수정" : "메모 추가"}</summary><form method="post" action="${endpoint(item)}">${fields(item, date)}<label>${role === "reader" ? "나만 보는 메모" : "다음 조사에 반영할 메모"}<textarea name="note" maxlength="1000" rows="3" placeholder="보류 이유나 이미 진행한 일을 남겨 주세요.">${esc(item.note)}</textarea></label><button class="button small">메모 저장</button></form></details>` : "";
     const reset = editable(role) && state !== "new" ? `<form method="post" action="${endpoint(item)}">${fields(item, date)}<button class="reset-status" name="status" value="new">검토 전으로 되돌리기</button></form>` : "";
     return `<article class="opportunity-row" id="progress-${esc(item.id)}" data-status="${state}">
       <div class="opportunity-main">
@@ -62,5 +62,5 @@ export function reportOverview(report, role, opportunities, focused, filter) {
 export function progressOverview(opportunities, role, filter, personal = false) {
   const all = Object.values(opportunities).sort((a, b) => b.lastReported.localeCompare(a.lastReported));
   const visible = all.filter((item) => !filter || item.status === filter);
-  return `<header class="overview-nav"><a href="/reports">← 전체 보고서 목록</a><span>DAILY BRIEF</span></header><section class="overview-heading"><p class="overview-date">진행 기록</p><h1>${personal ? "공모전·채용 진행 현황" : "겜마루 지원 정보 진행 현황"}</h1><p class="overview-summary">${personal ? "상태와 메모는 다음 조사에 반영됩니다. 지원서 제출이나 참가 신청은 실행되지 않습니다." : "동아리의 검토 상태와 메모를 함께 관리합니다. 저장한 내용은 다음 보고서 조사에 반영됩니다."}</p></section>${statusFilters(all, "/reports/progress", filter)}<section class="opportunities" aria-label="진행 항목">${personal ? categoryRows(visible, role) : opportunityRows(visible, role) || '<p class="empty">이 상태의 항목이 없습니다.</p>'}</section>`;
+  return `<header class="overview-nav"><a href="/reports">← 전체 보고서 목록</a><span>DAILY BRIEF</span></header><section class="overview-heading"><p class="overview-date">진행 기록</p><h1>${personal ? "공모전·채용 진행 현황" : "겜마루 지원 정보 진행 현황"}</h1><p class="overview-summary">${role === "reader" ? "상태와 메모는 내 계정에만 저장됩니다. 운영자의 조사 조건이나 다른 사람의 기록은 바뀌지 않습니다." : personal ? "상태와 메모는 다음 조사에 반영됩니다. 지원서 제출이나 참가 신청은 실행되지 않습니다." : "동아리의 검토 상태와 메모를 함께 관리합니다. 저장한 내용은 다음 보고서 조사에 반영됩니다."}</p></section>${statusFilters(all, "/reports/progress", filter)}<section class="opportunities" aria-label="진행 항목">${personal ? categoryRows(visible, role) : opportunityRows(visible, role) || '<p class="empty">이 상태의 항목이 없습니다.</p>'}</section>`;
 }
