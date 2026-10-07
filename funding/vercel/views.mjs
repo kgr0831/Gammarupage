@@ -52,7 +52,18 @@ export function viewer(report, role, opportunities = {}, focused = "", filter = 
 export function progressPage(opportunities, role, filter = "", personal = false, account = null) {
   return readingPage("진행 현황", progressIdentity(account) + progressOverview(opportunities, role, filter, personal), role, personal);
 }
-export function publisherGuide({ instructions, design, context, research, today }, role, channelMode = false) {
+export function notificationTargetPanel(destination, guide = false) {
+  if (!destination) return "";
+  const { channelId, enabled, lookup, channelName, guildId, guildName, url } = destination;
+  const lookupMessage = {
+    not_requested: "이름 조회 전입니다. 아래에서 Discord의 현재 서버·채널 이름을 확인할 수 있습니다.",
+    unavailable: "Discord 이름 조회를 완료하지 못했습니다. 아래 채널 ID는 사이트에 저장된 전송 대상입니다.",
+    invalid: "채널 설정 또는 조회 결과를 확인해야 합니다. 다른 채널이나 DM으로 대체하지 않습니다.",
+    verified: "Discord에서 해당 채널을 조회했습니다. 이름 조회는 메시지 전송 성공을 뜻하지 않습니다.",
+  }[lookup];
+  return `<section class="panel" id="notification-target" style="overflow-wrap:anywhere"><h2>Discord 알림 대상</h2><p>${enabled ? "알림 설정 켜짐" : "알림 설정 꺼짐"} · 보고서 제목·요약·링크</p><p>채널 ID: <strong data-notification-channel-id="${esc(channelId)}">${esc(channelId)}</strong></p>${guildId ? `<p>서버: <strong>${esc(guildName || "이름 미확인")}</strong> · ID ${esc(guildId)}</p>` : ""}${channelName ? `<p>채널: <strong>#${esc(channelName)}</strong></p>` : ""}<p class="hint">${esc(lookupMessage)}</p><div class="row"><a class="button secondary small" href="/reports/upload?${guide ? "guide=1&amp;" : ""}destination=1#notification-target">서버·채널 이름 확인</a>${url ? `<a class="button secondary small" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Discord 채널 열기 ↗</a>` : ""}</div><p class="hint">기존에 승인한 전송 대상과 채널 ID를 비교하세요. 같은 ID라면 이름만 달라져도 같은 채널입니다. 실제 발송 결과는 날짜·버전별 알림 결과에서 확인합니다.</p></section>`;
+}
+export function publisherGuide({ instructions, design, context, research, today, destination }, role, channelMode = false) {
   const source = (id, title, text) => `<section class="panel guide-section" id="${id}"><h2>${title}</h2><pre>${esc(text)}</pre></section>`;
   const publishedToday = research.previousReports.find((report) => report.date === today);
   const content = `<div class="publisher-guide"><header class="panel"><h1>조사 자료</h1>
@@ -63,11 +74,11 @@ export function publisherGuide({ instructions, design, context, research, today 
     <p class="hint">진행 기록은 이 페이지를 열었을 때의 값입니다. 발행 직전에 새로고침하고 변경된 상태와 메모를 반영하세요.</p>
     <div class="row"><a class="button secondary small" href="/reports/upload?guide=1">최신 자료 새로고침</a><a class="button small" href="/reports/upload">HTML 업로드로 돌아가기</a></div>
     <nav class="row" aria-label="조사 자료 목차"><a href="#research-state">이전 보고·진행 기록</a><a href="#instructions">dots 운영 지침</a><a href="#context">조사 대상 정보</a><a href="#design">Design.md</a></nav></header>
-    <section class="panel guide-section" id="research-state"><h2>이전 보고·진행 기록</h2><p>stateVersion, 기존 항목의 ID·상태·메모와 이전 보고서 목록이 포함된 전체 JSON입니다.</p><pre id="research-state-json">${esc(JSON.stringify(research, null, 2))}</pre></section>
+    ${notificationTargetPanel(destination, true)}<section class="panel guide-section" id="research-state"><h2>이전 보고·진행 기록</h2><p>stateVersion, 기존 항목의 ID·상태·메모와 이전 보고서 목록이 포함된 전체 JSON입니다.</p><pre id="research-state-json">${esc(JSON.stringify(research, null, 2))}</pre></section>
     ${source("instructions", "dots 운영 지침", instructions)}${source("context", "조사 대상 정보", context)}${source("design", "Design.md", design)}</div>`;
   return readingPage("조사 자료", content, role, research.audience === "personal").replace("</head>", `<style>.publisher-guide{min-width:0}.publisher-guide .guide-section{scroll-margin-top:24px;min-width:0}.publisher-guide pre{white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;font:inherit;line-height:1.8;margin:0;max-width:100%}.publisher-guide h1{font-size:clamp(26px,5vw,38px)}.publisher-guide nav{margin-top:24px;gap:18px}.publisher-guide nav a{text-decoration:underline}</style></head>`);
 }
-export function upload(today, role, published, deliveries, enabled, channelId = "", personal = false, basePath = "/reports") {
+export function upload(today, role, published, deliveries, enabled, channelId = "", personal = false, basePath = "/reports", destination = null) {
   const target = channelId ? "채널" : "DM";
   const pending = deliveries.filter((d) => d.date === today && d.status === "pending" && (channelId ? d.channelId === channelId : !d.channelId)).length;
   const date = published?.date || today;
@@ -80,7 +91,7 @@ export function upload(today, role, published, deliveries, enabled, channelId = 
     : '<p class="notice">알림 기록이 없습니다. 보고서 발행과 알림 신청 여부를 확인해 주세요.</p>';
   return readingPage("HTML 업로드", `<header class="overview-heading"><p class="overview-date">보고서 등록</p><h1>HTML 업로드</h1><p class="overview-summary">최신 자료 확인 → HTML 미리보기 → 발행 → 알림 확인</p><a class="button secondary small" href="/reports/upload?guide=1">조사 자료·최신 진행 상태 열기</a></header>
     ${published ? `<section class="panel"><p class="notice">${esc(published.date)} 보고서를 등록했습니다. 현재 v${revision} · 주소: <a href="/reports/${published.date}">${esc(basePath)}/${published.date}</a></p><p>이 날짜는 이미 발행되었습니다. 변경 사항이 있으면 아래 ‘수정본으로 재발행’을 선택하세요. 기존 버전과 진행 상태·메모는 유지됩니다.</p>${published.changeReason ? `<p>재발행 사유: ${esc(published.changeReason)}</p>` : ""}</section>` : ""}
-    <section class="panel" id="delivery-result"><h2>${esc(date)} · v${revision} 알림 결과</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${result}
+    ${notificationTargetPanel(destination)}<section class="panel" id="delivery-result"><h2>${esc(date)} · v${revision} 알림 결과</h2><p>오늘 대기 ${pending}건 · ${target} ${enabled ? "활성" : "꺼짐"}</p>${result}
     <p class="hint">전송 완료는 Discord가 메시지 생성을 확인한 건수입니다. 대기 0건만으로 전송 성공을 뜻하지 않습니다. 결과 불명·실패가 있으면 운영자가 확인해야 합니다.</p>
     <div class="row"><a class="button secondary small" href="/reports/upload${published ? `?published=${published.date}` : ""}#delivery-result">알림 결과 새로고침</a>${formButton("/reports/notify", channelId ? "오늘 보고서 채널 게시·대기 처리" : "남은 알림 처리", "", "secondary small")}</div>
     <p class="hint">각 버전의 알림은 수신 대상별로 한 번 보냅니다. 수정본의 알림은 이전 버전과 별도로 집계됩니다. ${channelId ? personal ? "전체 보고서는 Discord 로그인 후 열람할 수 있습니다. " : "전체 보고서는 구독 승인이 필요합니다. " : ""}전송 결과가 불확실한 메시지는 중복 발송하지 않습니다. 과거 보고서는 업로드해도 알림을 보내지 않습니다.</p></section>
@@ -98,11 +109,11 @@ export function upload(today, role, published, deliveries, enabled, channelId = 
     <div class="row"><a class="button secondary small" href="/reports/upload?guide=1#context">조사 대상 정보</a><a class="button secondary small" href="/reports/upload?guide=1#design">Design.md</a><a class="button secondary small" href="/reports/upload?guide=1#research-state">이전 보고·진행 기록</a><a class="button secondary small" href="/reports/upload?guide=1#instructions">dots 운영 지침</a></div>`, role, personal)
     .replace("</head>", "<style>.report-reader>.topbar{display:flex}.notification-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:24px 0}.notification-counts div{padding:12px;background:var(--navy);border:1px solid var(--line)}.notification-counts dt{font-size:14px}.notification-counts dd{margin:4px 0 0;font-size:22px;font-weight:700}.html-paste{margin:20px 0}.html-paste summary{cursor:pointer;text-decoration:underline}.html-paste textarea{font-family:monospace;font-size:16px;min-width:0;max-width:100%}</style></head>");
 }
-export function preview(draft, role, personal = false) {
+export function preview(draft, role, personal = false, destination = null) {
   const manifestNotice = draft.manifest ? `<p>진행 관리에 연결할 항목 ${draft.manifest.opportunities.length}개 · 조사 기준 버전 ${draft.manifest.stateVersion}</p><ul>${draft.manifest.opportunities.map((item) => `<li>${esc(item.title)} · ${esc(item.id)}</li>`).join("")}</ul>` : '<p class="notice">진행 항목 데이터가 없는 HTML입니다. 본문은 발행되지만 상태·메모 관리에는 연결되지 않습니다.</p>';
   const controls = `<section class="panel"><p class="notice">아직 발행하지 않았습니다. 아래 HTML의 내용과 원문 링크를 검토해 주세요. 미리보기는 30분간 유효합니다.</p>${draft.reissue ? `<p class="notice">수정본 v${draft.baseRevision + 1}로 재발행합니다. 기존 v${draft.baseRevision}와 진행 기록은 보관합니다.</p><p>사유: ${esc(draft.changeReason)}</p><p>수정본 알림: ${draft.notify ? "신청됨" : "보내지 않음"}</p>` : ""}${manifestNotice}<form method="post" action="/reports/upload/publish">${hidden("draft", draft.id)}<label><input type="checkbox" name="confirmed" value="yes" required>내용을 확인했고 보고서 등록에 동의합니다.</label><button class="button">${draft.reissue ? "이 수정본 재발행하기" : "이 HTML 등록하기"}</button></form></section>`;
   const frame = `<iframe title="업로드한 HTML 미리보기" src="/reports/upload/preview/${draft.id}/html?reading=1" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" style="display:block;width:100%;height:65vh;border:1px solid var(--line)"></iframe>`;
-  return page("HTML 미리보기", hero('PREVIEW <span>BRIEF.</span>', draft.title, draft.date, personal) + controls + frame, role, personal);
+  return page("HTML 미리보기", hero('PREVIEW <span>BRIEF.</span>', draft.title, draft.date, personal) + (draft.notify ? notificationTargetPanel(destination) : "") + controls + frame, role, personal);
 }
 
 const statuses = { new: "신청 전", pending: "승인 대기", approved: "승인됨", revoked: "구독 해제", rejected: "반려" };

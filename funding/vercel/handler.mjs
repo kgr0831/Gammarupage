@@ -16,6 +16,7 @@ import { requirePersonalSession, requireLinkRevision, bindPersonalDiscord, cance
 import { memberOpportunities } from "./member-progress.mjs";
 import { reportBasePath, reportCookieName, reportLink, mountedPage, mountedTarget } from "./paths.mjs";
 import { reportRevision } from "./report-versions.mjs";
+import { notificationTarget } from "./notification-target.mjs";
 
 const equal = (a, b) => typeof a === "string" && typeof b === "string" && a.length === b.length && Buffer.byteLength(a) === Buffer.byteLength(b) && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const security = {
@@ -292,13 +293,14 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
         if (!publisher && request.method === "GET") return redirect("/reports/login/publisher");
         check(publisher, "HTML 업로드 권한이 필요합니다.", 403);
         if (pathname === "/reports/upload" && request.method === "GET") {
+          const destination = await notificationTarget(config, notificationsEnabled, { lookup: url.searchParams.get("destination") === "1", fetcher });
           if (url.searchParams.get("guide") === "1") {
             const [instructions, design, context] = await Promise.all([
               source("instructions", data), source("design", data), source("context", data),
             ]);
-            return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today }, session.role, !!channelId));
+            return send(view.publisherGuide({ instructions, design, context, research: researchState(data, personal), today, destination }, session.role, !!channelId));
           }
-          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!!channelId || !personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal, basePath));
+          return send(view.upload(today, session.role, data.reports.find((r) => r.date === (url.searchParams.get("published") || today)), Object.values(data.deliveries), notificationsEnabled && (!!channelId || !personalAccountMode || !!linkedMember?.dm_opt_in), channelId, personal, basePath, destination));
         }
         if (Object.hasOwn(sourceFiles, pathname.slice("/reports/".length)) && request.method === "GET") return send(await source(pathname.slice("/reports/".length), data), 200, "text/plain; charset=utf-8");
         if (pathname === "/reports/notify" && request.method === "POST") {
@@ -327,7 +329,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
           check(personal || manifest?.audience !== "personal", "개인 보고서는 별도 개인 사이트에서 업로드해 주세요.");
           validateResearchState(data, manifest);
           const draft = await store.stage({ date: textField(form, "date"), title: textField(form, "title"), summary: textField(form, "summary"), html, notify: textField(form, "notify") === "yes", reissue: textField(form, "reissue") === "yes", changeReason: textField(form, "changeReason") }, sessionHash, today);
-          return send(view.preview(draft, session.role, personal));
+          return send(view.preview(draft, session.role, personal, await notificationTarget(config, notificationsEnabled)));
         }
         if (pathname === "/reports/upload/publish" && request.method === "POST") {
           const form = await formData(request); check(textField(form, "confirmed") === "yes", "보고서 내용을 확인해 주세요.");

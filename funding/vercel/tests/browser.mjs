@@ -255,7 +255,11 @@ try {
     PERSONAL_PUBLISHER_TOKEN: "test-publisher-".repeat(4), DISCORD_APPLICATION_ID: app.config.discordApplicationId,
     DISCORD_CLIENT_SECRET: "mock-client-secret",
   };
-  app.handler = createSiteHandler({ env: mountedEnv, clubStore: app.store, personalStore: mountedStore, fetch: async url => String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: mountedDiscordId, username: "linked-personal", global_name: "개인 검증 계정" }) });
+  app.handler = createSiteHandler({ env: mountedEnv, clubStore: app.store, personalStore: mountedStore, fetch: async url => {
+    if (String(url).endsWith("/channels/300000000000000002")) return Response.json({ id: "300000000000000002", guild_id: "400000000000000002", type: 0, name: "데일리-스크럼" });
+    if (String(url).endsWith("/guilds/400000000000000002")) return Response.json({ id: "400000000000000002", name: "검증용 데일리 스크럼 서버" });
+    return String(url).endsWith("token") ? Response.json({ access_token: "mock", token_type: "Bearer" }) : Response.json({ id: mountedDiscordId, username: "linked-personal", global_name: "개인 검증 계정" });
+  } });
   const sharedContext = await browser.newContext(), sharedPage = await sharedContext.newPage();
   await sharedPage.goto(`${app.config.origin}/reports/login/admin`);
   await sharedPage.getByLabel("아이디", { exact: true }).fill("club-admin");
@@ -384,6 +388,15 @@ try {
   await sharedPage.goto(`${app.config.origin}/personal/upload`);
   await sharedPage.getByText("채널 활성", { exact: false }).waitFor();
   assert.equal(await sharedPage.getByLabel("오늘 보고서의 제목·요약·링크를 Discord 서버 채널에 게시하기", { exact: true }).isChecked(), true);
+  await sharedPage.locator('[data-notification-channel-id="300000000000000002"]').waitFor();
+  await sharedPage.getByRole("link", { name: "서버·채널 이름 확인", exact: true }).click();
+  await sharedPage.getByText("검증용 데일리 스크럼 서버", { exact: true }).waitFor();
+  assert.equal(await sharedPage.getByRole("link", { name: "Discord 채널 열기 ↗", exact: true }).getAttribute("href"), "https://discord.com/channels/400000000000000002/300000000000000002");
+  for (const width of [320, 390]) {
+    await sharedPage.setViewportSize({ width, height: 950 });
+    assert.equal(await sharedPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await sharedPage.screenshot({ path: path.join(output, `personal-notification-target-${width}.png`), fullPage: true });
+  }
   await sharedContext.close();
   console.log("Browser passed: club workflows, private personal profile, owner settings, reissue history, stale-click safety, Discord-only sharing with two isolated readers and mobile layout. Mock storage/OAuth only; no deployment or real messages.");
 } finally { await browser.close(); await new Promise((resolve) => server.close(resolve)); }
