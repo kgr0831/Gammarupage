@@ -6,10 +6,14 @@
 ## 현재 확인한 접근 상태
 
 - AWS 계정 `066523631431`, CLI 사용자 `dudri-deployer`, 기본 리전 `ap-northeast-2`.
-- STS 계정 연결은 성공했다. 버킷 생성, IAM 조회, 크레딧 조회는 권한 부족으로 거절됐다.
+- 사용자가 `GammaruReportsMigration` 정책을 추가한 뒤, 전용 서울 S3 버킷과 Vercel OIDC 제공자·역할 구성을 완료했다.
+- 실제 버킷의 리전·퍼블릭 차단·AES256 암호화·버전 관리 비활성·Lifecycle 4개 규칙·역할 신뢰 조건과 범위를 확인했다.
+- 두 namespace에서 CLI 사용자의 실제 읽기·쓰기·조건부 갱신을 검증했다. 오래된 ETag 및 기존 파일 덮어쓰기가 거절됐고, 검증용 임시 파일은 제거했다. 운영 데이터는 아직 복사하지 않았다.
+- Vercel production 역할의 실제 실행 검증은 데이터 이전 단계에서 진행한다. CLI 사용자 검증과 구분한다.
+- 크레딧 API는 `IAM user access not activated`로 거절됐다. 루트 사용자의 결제 정보 IAM 접근 활성화가 별도로 필요하다.
 - 크레딧 $100는 사용자의 예상 잔액이며 실제 잔액·기한·S3 적용 여부는 아직 미확인이다.
 - 원본 Blob은 사용량 초과로 정지되어 있다. 기존 데이터가 읽히기 전에는 빈 S3로 전환하지 않는다.
-- 이 문서와 로컬 구현 완성만으로 운영 이전 완료를 의미하지 않는다.
+- 준비 코드는 커밋 `ccf8b3aa89006479bfffbf68bcf65c61ca33b5d3`로 배포했다. Production backend는 여전히 `blob`이며 운영 이전은 미완료다.
 
 ## 1. 이번 작업용 권한 추가
 
@@ -18,6 +22,12 @@ IAM → 사용자 → `dudri-deployer` → 권한 추가 → 인라인 정책 �
 [권한 정책](../infra/aws-bootstrap-permissions.json)의 전체 내용을 붙여넣고
 `GammaruReportsMigration`으로 저장한다. 정책이 붙은 뒤 CLI에서 다시 검증한다.
 정책은 지정 버킷·Vercel 인증 제공자·보고서 역할과 크레딧 조회에 한정한다.
+
+크레딧 조회가 `IAM user access not activated`로 거절되면, 루트 사용자로
+[AWS 계정 설정](https://console.aws.amazon.com/billing/home?#/account)에 들어가
+`IAM 사용자 및 역할의 결제 정보 액세스` → `편집` → `IAM 액세스 활성화` → `업데이트`를 선택한다.
+정책의 `billing:GetCredits`와 계정의 결제 접근 활성화는 별도 조건이다.
+활성화 전에는 크레딧 잔액이 확인됐다고 보고하지 않는다.
 
 ## 2. AWS 구성
 
@@ -66,6 +76,13 @@ REPORTS_AWS_ROLE_ARN=arn:aws:iam::066523631431:role/gammaru-reports-vercel
    재발행·테스트 알림을 임의로 생성하지 않는다. 실패 시 원본을 보존한 채 전환을 중단한다.
 7. 검증 후 쓰기를 재개하고 미발행 작업은 dots가 최신 상태를 다시 읽어 진행한다.
 
+### 현재 남은 원본 접근 문제
+
+Vercel의 `gammaru-reports`는 `limits-exceeded-suspended` / `usageQuotaExceeded=true` 상태다.
+공식 안내상 Hobby 한도 갱신을 기다리거나 Pro 체험으로 제한을 해제할 수 있다.
+해당 팀의 체험 가능 여부는 미확인이다. 유료 요금제 변경은 별도 동의 없이 진행하지 않는다.
+읽기가 복구되면 최신 원본을 검증해 이전하며, 확인되지 않은 로컬 예전 기록으로 최신 상태를 대체하지 않는다.
+
 ## 최근 7일 보관
 
 - 한국시간 오늘을 포함한 최근 7개 날짜만 목록과 보고서 URL에서 열람한다.
@@ -90,3 +107,5 @@ REPORTS_AWS_ROLE_ARN=arn:aws:iam::066523631431:role/gammaru-reports-vercel
 - [S3 만료 처리](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html)
 - [Vercel Cron 제한](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 - [AWS 크레딧 조회](https://docs.aws.amazon.com/cli/latest/reference/billing/get-credits.html)
+- [AWS 결제 정보 IAM 접근 활성화](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-getting-started.html)
+- [Vercel Blob 한도와 체험 안내](https://vercel.com/docs/vercel-blob/usage-and-pricing)
