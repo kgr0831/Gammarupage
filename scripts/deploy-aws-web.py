@@ -92,7 +92,7 @@ def archive():
     repository = git("rev-parse", "--show-toplevel").decode().strip()
     # Running archive inside code/ would additionally filter the selected tree
     # by code/, producing an empty archive. Always archive from the Git root.
-    raw = subprocess.run(["git", "archive", "--format=tar.gz", tree], cwd=repository, capture_output=True, check=True).stdout
+    raw = subprocess.run(["git", "-c", "core.autocrlf=false", "archive", "--format=tar.gz", tree], cwd=repository, capture_output=True, check=True).stdout
     names = set()
     with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
         for entry in tar:
@@ -106,6 +106,8 @@ def archive():
                 raise RuntimeError("Release includes a runtime environment file")
             if entry.name.startswith(("funding/data/", "test-results/")):
                 raise RuntimeError("Release includes private runtime data")
+            if entry.isfile() and path.suffix == ".sh" and b"\r" in tar.extractfile(entry).read():
+                raise RuntimeError("Release shell scripts must use Linux line endings")
     if not {"package.json", "package-lock.json", "next.config.ts", "scripts/aws-install-release.sh"}.issubset(names):
         raise RuntimeError("Release is missing application-root files")
     return revision, raw
