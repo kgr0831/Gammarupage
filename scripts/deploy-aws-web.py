@@ -89,9 +89,14 @@ def archive():
         raise RuntimeError("Invalid revision")
     prefix = git("rev-parse", "--show-prefix").decode().strip().rstrip("/")
     tree = f"{revision}:{prefix}" if prefix else revision
-    raw = git("archive", "--format=tar.gz", tree)
+    repository = git("rev-parse", "--show-toplevel").decode().strip()
+    # Running archive inside code/ would additionally filter the selected tree
+    # by code/, producing an empty archive. Always archive from the Git root.
+    raw = subprocess.run(["git", "archive", "--format=tar.gz", tree], cwd=repository, capture_output=True, check=True).stdout
+    names = set()
     with tarfile.open(fileobj=io.BytesIO(raw), mode="r:gz") as tar:
         for entry in tar:
+            names.add(entry.name)
             path = Path(entry.name)
             if path.is_absolute() or ".." in path.parts or entry.issym() or entry.islnk():
                 raise RuntimeError("Unsafe release archive entry")
@@ -101,6 +106,8 @@ def archive():
                 raise RuntimeError("Release includes a runtime environment file")
             if entry.name.startswith(("funding/data/", "test-results/")):
                 raise RuntimeError("Release includes private runtime data")
+    if not {"package.json", "package-lock.json", "next.config.ts", "scripts/aws-install-release.sh"}.issubset(names):
+        raise RuntimeError("Release is missing application-root files")
     return revision, raw
 
 
