@@ -1,4 +1,5 @@
-// Run after REPORTS_DEPLOY_TARGET=aws npm run build. Uses only fake local S3,
+// Build with REPORTS_DEPLOY_TARGET=aws and NEXT_PUBLIC_SITE_URL=https://dexample.cloudfront.net.
+// Uses only fake local S3,
 // temporary random credentials and a local child; no AWS/Discord writes.
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";

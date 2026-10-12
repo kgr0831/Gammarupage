@@ -198,7 +198,16 @@ def main():
     current_group = ec2.describe_security_groups(GroupIds=[group])["SecurityGroups"][0]
     for rule in current_group["IpPermissions"]:
         if rule.get("PrefixListIds"):
-            ec2.revoke_security_group_ingress(GroupId=group, IpPermissions=[rule])
+            # EC2 merges sources with the same protocol/port into one rule.
+            # Remove only the bootstrap prefix, retaining the new private SG.
+            prefix_only = {key: rule[key] for key in ("IpProtocol", "FromPort", "ToPort", "PrefixListIds")}
+            ec2.revoke_security_group_ingress(GroupId=group, IpPermissions=[prefix_only])
+    locked = ec2.describe_security_groups(GroupIds=[group])["SecurityGroups"][0]["IpPermissions"]
+    if len(locked) != 1 or locked[0].get("IpProtocol") != "tcp" or locked[0].get("FromPort") != 80 or locked[0].get("ToPort") != 80:
+        raise RuntimeError("Origin ingress verification failed")
+    rule = locked[0]
+    if any(rule.get(key) for key in ("IpRanges", "Ipv6Ranges", "PrefixListIds")) or [p["GroupId"] for p in rule.get("UserIdGroupPairs", [])] != [managed[0]["GroupId"]]:
+        raise RuntimeError("Origin ingress must allow only the CloudFront private security group")
     # Secrets remain in memory until encrypted by SSM; only the parameter name
     # appears in instance commands, CloudFormation, deployment output and Git.
     ssm.put_parameter(Name=PARAMETER, Type="SecureString", Value=json.dumps(values), Overwrite=True)

@@ -133,7 +133,7 @@ AWS는 새 저장소로 시작했으므로 예전 Vercel의 stateVersion·회원
 
 ## 검증
 
-- `REPORTS_DEPLOY_TARGET=aws npm run build`: standalone 생성 및 172개 정적 페이지 빌드.
+- `REPORTS_DEPLOY_TARGET=aws NEXT_PUBLIC_SITE_URL=https://dexample.cloudfront.net npm run build`: 검증용 standalone 생성 및 172개 정적 페이지 빌드. 실제 배포는 스크립트가 확정된 주소를 사용한다.
 - `node scripts/test-aws-standalone.mjs`: 로컬 가짜 S3를 사용한 실제 Next 실행,
   HTTPS 프록시 헤더, 양쪽 publisher 로그인·쿠키 분리·자료 페이지·CSRF·정적 파일 확인.
 - 보고서 테스트 116개 통과: publisher guide·7일 정리·계정 분리·프록시 경계 포함. 수정 파일 ESLint 통과.
