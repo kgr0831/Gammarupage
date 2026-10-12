@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { activities } from "@/data/site";
+import { PixelScene } from "@/components/PixelScene";
 
 export const metadata: Metadata = {
   title: "Activities",
@@ -29,6 +30,11 @@ export default function ActivitiesPage() {
         <h1>활동</h1>
         <div className="page-hero__aside page-hero__aside--copy"><p>공모전, 게임잼, 스터디와 교류</p></div>
       </header>
+
+      <section className="studio-feature">
+        <div className="studio-feature__copy reveal"><p className="eyebrow">함께 만드는 시간</p><h2>아이디어가 게임이 되는<br />우리의 작업실.</h2><p>공부하고, 만들고, 함께 플레이하며<br />다음 프로젝트를 이어갑니다.</p></div>
+        <PixelScene scene="studio" className="studio-feature__art" />
+      </section>
 
       <section className="process-line" aria-label="겜마루 활동 과정">
         <div className="process-line__rail" aria-hidden="true" />

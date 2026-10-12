@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { logEntries, siteConfig } from "@/data/site";
+import { PixelScene } from "@/components/PixelScene";
 
 export const metadata: Metadata = {
   title: "Log",
@@ -11,7 +12,7 @@ export default function LogPage() {
     <div className="page-shell log-page">
       <header className="page-hero">
         <h1>활동 기록</h1>
-        <div className="page-hero__aside page-hero__aside--copy"><p>활동 기록과 모집 안내</p></div>
+        <div className="page-hero__aside page-hero__aside--art"><PixelScene scene="planning" className="log-heading-art" /><p>활동 기록과 모집 안내</p></div>
       </header>
 
       <section className="log-status reveal">

@@ -1,4 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import Script from "next/script";
 import { Noto_Sans_KR, Manrope } from "next/font/google";
 import "./globals.css";
 import "./interior.css";
@@ -46,7 +50,9 @@ export const viewport: Viewport = {
   colorScheme: "dark",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const pixelScript = await readFile(path.join(process.cwd(), "public/landing/illustrations.js"));
+  const pixelVersion = createHash("sha256").update(pixelScript).digest("hex").slice(0, 12);
   return (
     <html lang="ko" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <body>
@@ -55,6 +61,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <SiteHeader />
         <main id="main-content">{children}</main>
         <SiteFooter />
+        <Script src={`/landing/illustrations.js?v=${pixelVersion}`} strategy="afterInteractive" />
       </body>
     </html>
   );

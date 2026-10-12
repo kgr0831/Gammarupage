@@ -1,4 +1,4 @@
-﻿/* Pixel silhouettes stay on their grid; motion is interpolated in elapsed time. */
+/* Pixel silhouettes stay on their grid; motion is interpolated in elapsed time. */
 (() => {
   'use strict';
   const SCALE = 3;
@@ -224,28 +224,16 @@
       }
     }
   };
-  const scenes=[];
-  function mount(host,name,role=false) {
-    if(!host)return;
-    const def=definitions[name],canvas=document.createElement('canvas');
-    canvas.width=def.width*SCALE;canvas.height=def.height*SCALE;
-    canvas.className='pixel-canvas';canvas.dataset.scene=name;canvas.setAttribute('aria-hidden','true');
-    if(role){canvas.dataset.roleArt=name;canvas.hidden=name!=='planning';}
-    host.append(canvas);
-    const context=canvas.getContext('2d');if(!context)return;
-    context.imageSmoothingEnabled=false;
-    scenes.push({canvas,context,def,visible:false,time:0,background:null});
-  }
-  mount(document.querySelector('[data-illustration=world]'),'world');
-  const roles=document.querySelector('[data-illustration=roles]');
-  ['planning','programming','art','sound'].forEach(name=>mount(roles,name,true));
-  mount(document.querySelector('[data-illustration=studio]'),'studio');
+  // One renderer serves both the full-document landing and client-side routes.
+  // Detached hosts are released, so navigating or changing roles cannot leave
+  // invisible animation loops and canvas buffers behind.
+  const scenes=new Map(),hosts=new Map();
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const still=()=>reduced.matches||navigator.connection?.saveData||document.documentElement.classList.contains('motion-paused');
   const obscured=()=>document.hidden||document.body.matches('.menu-open,.dialog-open');
-  const active=scene=>scene.visible&&!scene.canvas.hidden;
+  const active=scene=>scene.visible&&!scene.canvas.hidden&&scene.canvas.isConnected;
+  const hasActive=()=>[...scenes.values()].some(active);
   function draw(scene,time) {
-    // Build fixed scenery once, and only when this scene is first needed.
     if(!scene.background){
       scene.background=document.createElement('canvas');scene.background.width=scene.canvas.width;scene.background.height=scene.canvas.height;
       ctx=scene.background.getContext('2d');ctx.setTransform(SCALE,0,0,SCALE,0,0);scene.def.base();
@@ -256,7 +244,7 @@
   let request=0,previous=0;
   function frame(now) {
     request=0;
-    if(still()||obscured()||!scenes.some(active))return;
+    if(still()||obscured()||!hasActive())return;
     if(!previous)previous=now;
     const delta=now-previous;
     if(delta>=FRAME_MS-.5){
@@ -269,15 +257,51 @@
     cancelAnimationFrame(request);request=0;previous=0;
     if(obscured())return;
     scenes.forEach(scene=>{if(active(scene))draw(scene,still()?(scene.def.stillTime??4.5):scene.time);});
-    if(!still()&&scenes.some(active))request=requestAnimationFrame(frame);
+    if(!still()&&hasActive())request=requestAnimationFrame(frame);
   }
-  if('IntersectionObserver' in window){
-    const byCanvas=new Map(scenes.map(scene=>[scene.canvas,scene]));
-    const observer=new IntersectionObserver(entries=>{entries.forEach(entry=>{byCanvas.get(entry.target).visible=entry.isIntersecting;});sync();},{threshold:.01});
-    scenes.forEach(scene=>observer.observe(scene.canvas));
-  }else{scenes.forEach(scene=>{scene.visible=true;});sync();}
+  const observer='IntersectionObserver' in window?new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{const scene=scenes.get(entry.target);if(scene)scene.visible=entry.isIntersecting;});sync();
+  },{threshold:.01}):null;
+  function mount(host,name,role=false) {
+    const def=definitions[name],canvas=document.createElement('canvas');
+    canvas.width=def.width*SCALE;canvas.height=def.height*SCALE;
+    canvas.className='pixel-canvas';canvas.dataset.scene=name;canvas.setAttribute('aria-hidden','true');
+    if(role){canvas.dataset.roleArt=name;canvas.hidden=name!=='planning';}
+    host.append(canvas);
+    const context=canvas.getContext('2d');if(!context)return;
+    context.imageSmoothingEnabled=false;
+    scenes.set(canvas,{canvas,host,context,def,visible:!observer,time:0,background:null});
+    observer?.observe(canvas);
+  }
+  function reconcile() {
+    hosts.forEach((name,host)=>{
+      if(host.isConnected&&host.dataset.illustration===name)return;
+      scenes.forEach((scene,canvas)=>{
+        if(scene.host!==host)return;
+        observer?.unobserve(canvas);scenes.delete(canvas);canvas.remove();
+      });
+      hosts.delete(host);
+    });
+    document.querySelectorAll('[data-illustration]').forEach(host=>{
+      if(hosts.has(host))return;
+      const name=host.dataset.illustration;
+      if(name!=='roles'&&!Object.hasOwn(definitions,name))return;
+      hosts.set(host,name);
+      if(name==='roles')['planning','programming','art','sound'].forEach(role=>mount(host,role,true));
+      else mount(host,name);
+    });
+    sync();
+  }
+  // afterInteractive runs only once; observe later Next page/role mounts too.
+  const mounts=new MutationObserver(reconcile);
+  mounts.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['data-illustration']});
+  const overlays=new MutationObserver(sync);
+  overlays.observe(document.body,{attributes:true,attributeFilter:['class']});
+  overlays.observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+  reconcile();
   addEventListener('gammaru:rolechange',event=>{
-    scenes.filter(scene=>scene.canvas.hasAttribute('data-role-art')).forEach(scene=>{
+    scenes.forEach(scene=>{
+      if(!scene.canvas.hasAttribute('data-role-art'))return;
       scene.canvas.hidden=scene.canvas.dataset.roleArt!==event.detail;
       if(scene.canvas.hidden)scene.visible=false;
       else{const bounds=scene.canvas.getBoundingClientRect();scene.visible=bounds.bottom>0&&bounds.top<innerHeight;scene.time=0;}

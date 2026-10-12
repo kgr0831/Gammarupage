@@ -97,6 +97,25 @@ body { font-family: inherit; }
 .log-row--full i { display: none; }
 .social-terminal { margin-top: 56px; padding: 36px; border-color: var(--line); }
 
+/* Reuse the landing's pixel scenes in reserved spaces beside the content. */
+.pixel-scene { min-width:0; aspect-ratio:10 / 7; pointer-events:none; }
+.pixel-scene--world { aspect-ratio:12 / 5; }
+.pixel-scene--studio { aspect-ratio:30 / 19; }
+.pixel-scene .pixel-canvas { display:block; width:100%; height:100%; object-fit:contain; image-rendering:pixelated; }
+.page-hero__aside--art { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+.page-hero__art { width:clamp(240px, 24vw, 360px); }
+.page-hero__stats { display:flex; align-items:center; gap:16px; }
+.detail-wayfinding { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-top:-32px; }
+.detail-wayfinding .breadcrumbs { margin:0; min-width:0; }
+.detail-wayfinding__art { width:216px; flex-shrink:0; opacity:.8; }
+.role-panel { grid-template-columns:minmax(0, 1fr) minmax(0, 1.15fr); gap:48px; padding:36px 48px; }
+.role-panel .role-panel__art { width:100%; max-width:440px; justify-self:center; }
+.studio-feature { display:grid; grid-template-columns:1fr 1.1fr; align-items:center; gap:56px; padding-block:48px; border-bottom:1px solid var(--line); }
+.studio-feature h2 { font-size:clamp(28px, 3vw, 44px); line-height:1.5; letter-spacing:-.05em; font-weight:550; word-break:keep-all; }
+.studio-feature__copy > p:last-child { margin:24px 0 0; color:var(--muted); line-height:1.9; }
+.studio-feature__art { width:100%; max-width:540px; justify-self:center; }
+.log-heading-art { width:170px; }
+
 @media (max-width:1100px) {
   :root { --page-pad: 36px; }
   .game-detail__hero { grid-template-columns: 1fr; gap: 32px; }
@@ -137,6 +156,19 @@ body { font-family: inherit; }
   .log-status { padding: 24px 20px; gap: 18px; }
   .log-status h2 { font-size: 21px; }
   .social-terminal { margin-top: 36px; gap: 24px; }
+  .page-hero__aside--art { align-items:flex-start; }
+  .page-hero__art { width:min(100%, 280px); align-self:center; }
+  .page-hero__stats { gap:12px; }
+  .detail-wayfinding { margin-top:0; gap:8px; flex-direction:column-reverse; align-items:flex-start; padding-bottom:12px; }
+  .detail-wayfinding__art { width:180px; align-self:flex-end; margin-top:-20px; }
+  .role-panel { grid-template-columns:1fr; gap:24px; padding:24px; }
+  .role-panel .role-panel__art { max-width:320px; }
+  .studio-feature { grid-template-columns:1fr; gap:28px; padding-block:36px; }
+  .studio-feature h2 { font-size:28px; }
+  .studio-feature__copy > p:last-child { margin-top:16px; font-size:14px; }
+  .studio-feature__art { max-width:420px; }
+  .log-page .page-hero__aside--art { flex-direction:row; align-items:center; gap:20px; }
+  .log-heading-art { width:128px; flex-shrink:0; }
 }
 @media (max-width:360px) {
   :root { --page-pad: 16px; }

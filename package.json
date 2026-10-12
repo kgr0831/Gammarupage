@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "test:smoke": "node scripts/smoke.mjs",
     "test:reel": "node scripts/test-landing-reel.mjs",
+    "test:pixels": "node scripts/test-pixel-scenes.mjs",
     "test:details": "node scripts/test-game-details.mjs",
     "import:archive": "node scripts/import-archive.mjs --download-media",
     "assets:brand": "node scripts/build-brand-assets.mjs",

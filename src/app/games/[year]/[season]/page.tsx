@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArchiveExplorer } from "@/components/ArchiveExplorer";
+import { PixelScene } from "@/components/PixelScene";
 import { archiveGames, archiveGenres, archiveYears, seasonNames } from "@/data/archive";
 import type { ArchiveSeason, GameSummary } from "@/types/archive";
 
@@ -30,7 +31,10 @@ export default async function SeasonGamesPage({ params }: { params: Promise<{ ye
     <div className="page-shell archive-page">
       <header className="page-hero page-hero--compact">
         <h1>{year}<span>.</span></h1>
-        <div className="page-hero__aside"><strong>{String(seasonGames.length).padStart(2, "0")}</strong><p>{name.ko}<br />출품작 아카이브</p></div>
+        <div className="page-hero__aside page-hero__aside--art">
+          <PixelScene scene="world" className="page-hero__art" />
+          <div className="page-hero__stats"><strong>{String(seasonGames.length).padStart(2, "0")}</strong><p>{name.ko}<br />출품작 아카이브</p></div>
+        </div>
       </header>
       <ArchiveExplorer
         games={archiveGames as GameSummary[]}

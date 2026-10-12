@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GameCard } from "@/components/GameCard";
 import { GameVisual } from "@/components/GameVisual";
+import { PixelScene } from "@/components/PixelScene";
 import { archiveGames, getGame, getGamePath, seasonNames, withVideo } from "@/data/archive";
 import { assetPath } from "@/lib/paths";
 
@@ -32,11 +33,14 @@ export default async function GameDetailPage({ params }: { params: Promise<{ yea
 
   return (
     <article className="game-detail page-shell">
-      <nav className="breadcrumbs" aria-label="현재 위치">
-        <Link href="/games">게임</Link><span>/</span>
-        <Link href={`/games/${game.year}/${game.season}`}>{game.year} {game.seasonLabel}</Link><span>/</span>
-        <span aria-current="page">{game.title}</span>
-      </nav>
+      <div className="detail-wayfinding">
+        <nav className="breadcrumbs" aria-label="현재 위치">
+          <Link href="/games">게임</Link><span>/</span>
+          <Link href={`/games/${game.year}/${game.season}`}>{game.year} {game.seasonLabel}</Link><span>/</span>
+          <span aria-current="page">{game.title}</span>
+        </nav>
+        <PixelScene scene="world" className="detail-wayfinding__art" />
+      </div>
       <header className="game-detail__hero">
         <div className="game-detail__copy">
           <p className="page-code">{game.year} / {game.seasonLabel}</p>

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { roles } from "@/data/site";
+import { PixelScene, type PixelSceneName } from "./PixelScene";
+
+const scenes: Record<string, PixelSceneName> = { plan: "planning", programming: "programming", art: "art", sound: "sound" };
 
 export function RoleDeck() {
   const [activeId, setActiveId] = useState(roles[0].id);
@@ -38,7 +41,7 @@ export function RoleDeck() {
         ))}
       </div>
       <div id="role-panel" className="role-panel" role="tabpanel" aria-labelledby={`role-${active.id}`} key={active.id}>
-        <span className="role-panel__number">0{activeIndex + 1}</span>
+        <PixelScene scene={scenes[active.id]} className="role-panel__art" />
         <div>
           <p className="eyebrow">{active.en} / {active.ko}</p>
           <h3>{active.headline}</h3>
