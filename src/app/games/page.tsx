@@ -13,7 +13,7 @@ export default function GamesPage() {
   return (
     <div className="page-shell archive-page">
       <header className="page-hero">
-        <h1>GAMES<span>.</span></h1>
+        <h1>게임 아카이브</h1>
         <div className="page-hero__aside">
           <strong>{String(archiveGames.length).padStart(3, "0")}</strong>
           <p>역대 공모전과 게임잼 작품</p>

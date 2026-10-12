@@ -1,0 +1,144 @@
+/* Archive and information pages use the selected landing's visual language.
+   Header/footer and palette live in public/landing/chrome.css for both renders. */
+html { scroll-padding-top: 104px; }
+body { font-family: inherit; }
+[hidden] { display: none !important; }
+
+.page-shell { padding-top: 144px; padding-bottom: 72px; }
+.page-hero,
+.page-hero--compact { min-height: 0; gap: 24px; padding-block: 24px 32px; border-color: var(--line); }
+.page-hero::after { display: none; }
+.page-hero h1,
+.page-hero--long h1 { font-size: clamp(32px, 3.8vw, 54px); line-height: 1.35; font-weight: 650; letter-spacing: -.06em; white-space: normal; word-break: keep-all; }
+.page-hero__aside { gap: 16px; align-items: center; }
+.page-hero__aside strong { font-size: 32px; line-height: 1.2; font-weight: 600; }
+.page-hero__aside p { font-size: 14px; line-height: 1.8; font-weight: 400; }
+.page-hero__aside--copy { padding-left: 0; border: 0; }
+.eyebrow, .page-code { font-size: 12px; letter-spacing: .04em; line-height: 1.6; }
+
+.pixel-button { min-height: 54px; padding: 14px 24px; clip-path: none; font-size: 14px; letter-spacing: 0; }
+.pixel-button--lime { color: var(--navy); background: var(--pink); border-color: var(--pink); }
+.pixel-button:hover,
+.pixel-button--primary:hover,
+.pixel-button--lime:hover { background: #f598d1; color: var(--navy); box-shadow: none; transform: translateY(-2px); }
+.pixel-button:active { box-shadow: none; transform: none; }
+.pixel-button--disabled:hover { background: transparent; color: var(--paper); transform: none; }
+
+.archive-explorer { padding-top: 28px; }
+.archive-controls { border-color: var(--line); }
+.archive-controls label, .award-toggle { padding: 14px; gap: 8px; }
+.archive-controls label > span, .award-toggle span { font-size: 11px; letter-spacing: 0; }
+.archive-controls input, .archive-controls select { font-size: 14px; min-height: 28px; }
+.archive-controls input:focus-visible, .archive-controls select:focus-visible { outline: 2px solid var(--pink); outline-offset: 3px; }
+.award-toggle { font-size: 12px; }
+.archive-count { margin: 20px 0 28px; font-size: 12px; letter-spacing: 0; }
+.archive-count span { font-size: 16px; }
+.game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 28px; }
+.game-card { border:0; }
+.game-card::before { display:none; }
+.game-card__visual { aspect-ratio: 16 / 10; border: 0; margin-top:0; clip-path:none; transform: none; }
+.game-card:hover .game-card__visual { transform: none; }
+.game-card__scan, .game-card__index { display: none; }
+.game-card__meta { padding-top: 18px; font-size: 12px; letter-spacing: 0; text-transform: none; }
+.game-card h3 { font-size: 23px; font-weight: 600; line-height: 1.5; letter-spacing: -.04em; margin: 8px 0 4px; }
+.game-card__team { font-size: 13px; line-height: 1.8; }
+.game-card__award, .detail-award { font-size: 11px; letter-spacing: 0; }
+.load-more { height: 56px; margin-top: 40px; font-size: 14px; letter-spacing: 0; font-weight: 600; }
+
+.breadcrumbs { gap: 10px; margin-bottom: 28px; font-size: 12px; letter-spacing: 0; }
+.breadcrumbs a { flex-shrink: 0; }
+.breadcrumbs span { min-width: 0; }
+.game-detail__hero { min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 48px; padding: 20px 0 56px; border-color: var(--line); }
+.game-detail__copy h1 { line-height: 1.35; font-weight: 650; letter-spacing: -.04em; }
+.game-detail__cover { box-shadow: none; border-color: var(--line); background: var(--surface); }
+.game-detail__facts { margin: 28px 0; }
+.game-detail__facts span { font-size: 11px; letter-spacing: .04em; }
+.game-detail__facts strong { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.detail-section { padding-block: 56px; }
+.detail-copy-grid { gap: 48px; }
+.detail-copy-grid h2 { font-size: clamp(22px, 2.2vw, 32px); font-weight: 550; line-height: 1.8; word-break: keep-all; overflow-wrap: anywhere; }
+.detail-copy-grid span { font-size: 12px; letter-spacing: 0; }
+.detail-copy-grid p { line-height: 1.9; }
+.screenshot-grid img, .readme-block { background: var(--surface); }
+.readme-block { font-size: 14px; line-height: 1.9; }
+.detail-source, .related-games__heading a, .back-link { font-size: 13px; letter-spacing: 0; }
+.related-games { padding-block: 56px 0; }
+
+.about-intro, .about-roles, .faq-section { padding-block: 56px; gap: 48px; }
+.about-intro__logo { background: var(--surface); border-color: var(--line); }
+.about-intro h2, .about-roles__heading h2, .faq-section h2,
+.activity-note h2, .media-ledger h2, .social-terminal h2 { font-size: clamp(26px, 2.8vw, 40px); line-height: 1.5; font-weight: 550; letter-spacing: -.05em; word-break: keep-all; }
+.about-intro__copy > p:last-child, .activity-note > p:last-child { line-height: 1.95; margin-top: 24px; }
+.about-roles__heading { margin-bottom: 28px; }
+.role-panel { min-height: 280px; }
+.role-panel h3 { line-height: 1.6; font-weight: 550; }
+.history-track { padding-block: 56px 0; }
+.history-track__line { top: 116px; bottom: 66px; }
+.history-track article { min-height: 150px; }
+.faq-section { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+.faq-section__heading h2 { font-size: clamp(24px, 2.4vw, 36px); }
+.faq-item summary { min-height: 78px; font-size: 14px; }
+.faq-item > p { font-size: 14px; line-height: 1.95; }
+.about-exit { padding: 32px; border-color: var(--line); background: var(--surface); }
+.about-exit p { font-size: clamp(20px, 2.5vw, 32px); line-height: 1.6; }
+
+.process-line { padding-top: 32px; }
+.process-line__rail { top: 32px; }
+.process-step { min-height: 160px; }
+.process-step h2 { font-size: 26px; font-weight: 550; line-height: 1.5; }
+.process-step > p { font-size: 15px; line-height: 1.9; }
+.activity-note-grid { margin-block: 56px; border-color: var(--line); }
+.activity-note { min-height: 0; padding: 36px; }
+.media-ledger { padding-block: 0; }
+.media-ledger__heading { margin-bottom: 28px; }
+.log-status { margin-block: 32px 48px; border-color: var(--line); background: var(--surface); padding: 32px; gap: 24px; }
+.log-status h2 { font-size: clamp(22px, 2.4vw, 32px); line-height: 1.5; font-weight: 550; }
+.log-status > p { line-height: 1.9; font-size: 14px; }
+.log-row--full i { display: none; }
+.social-terminal { margin-top: 56px; padding: 36px; border-color: var(--line); }
+
+@media (max-width:1100px) {
+  :root { --page-pad: 36px; }
+  .game-detail__hero { grid-template-columns: 1fr; gap: 32px; }
+  .game-detail__cover { grid-row: 1; }
+  .faq-section { grid-template-columns: 1fr; }
+}
+@media (max-width:760px) {
+  :root { --page-pad: 20px; }
+  .page-shell { padding-top: 108px; padding-bottom: 40px; }
+  .page-hero { grid-template-columns: 1fr; gap: 16px; padding-block: 16px 24px; }
+  .page-hero h1, .page-hero--long h1 { font-size: 32px; letter-spacing: -.06em; }
+  .page-hero__aside { margin-top: 0; }
+  .page-hero__aside strong { font-size: 24px; }
+  .game-grid { grid-template-columns: 1fr; gap: 30px; }
+  .game-card h3 { font-size: 20px; }
+  .game-card__meta { font-size: 11px; }
+  .breadcrumbs { font-size: 11px; gap: 7px; margin-bottom: 16px; }
+  .game-detail__hero { gap: 24px; padding-block: 12px 36px; }
+  .game-detail__facts { margin-block: 24px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .game-detail__facts div { padding:12px 8px; border-bottom:0; border-right:1px solid var(--line); }
+  .game-detail__facts div:first-child { padding-left:0; }
+  .game-detail__facts div:last-child { border-right:0; }
+  .detail-section, .about-intro, .about-roles, .faq-section { padding-block: 36px; gap: 28px; }
+  .detail-copy-grid { gap: 24px; }
+  .detail-copy-grid h2 { font-size: 22px; }
+  .related-games { padding-top: 36px; }
+  .about-intro h2, .about-roles__heading h2, .media-ledger h2, .activity-note h2, .social-terminal h2 { font-size: 26px; }
+  .faq-section__heading h2 { font-size: clamp(22px, 6vw, 28px); }
+  .faq-item summary { grid-template-columns: 24px 1fr auto; gap: 10px; padding-block: 18px; }
+  .faq-item > p { padding-inline: 34px 0; }
+  .about-exit, .activity-note, .social-terminal { padding: 24px; }
+  .about-exit .pixel-button { align-self: stretch; }
+  .role-panel { min-height: 0; }
+  .process-step { padding-block: 28px; }
+  .process-step h2 { font-size: 22px; }
+  .process-step > p { font-size: 14px; }
+  .activity-note-grid { margin-block: 36px; }
+  .log-status { padding: 24px 20px; gap: 18px; }
+  .log-status h2 { font-size: 21px; }
+  .social-terminal { margin-top: 36px; gap: 24px; }
+}
+@media (max-width:360px) {
+  :root { --page-pad: 16px; }
+  .page-hero h1 { font-size: 28px; }
+}

@@ -10,7 +10,7 @@ export default function LogPage() {
   return (
     <div className="page-shell log-page">
       <header className="page-hero">
-        <h1>LOG<span>.</span></h1>
+        <h1>활동 기록</h1>
         <div className="page-hero__aside page-hero__aside--copy"><p>활동 기록과 모집 안내</p></div>
       </header>
 

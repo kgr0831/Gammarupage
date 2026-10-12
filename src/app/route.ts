@@ -10,7 +10,7 @@ export const dynamic = "force-static";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const assets = ["styles.css", "games.js", "reel.js", "script.js", "illustrations.js", "motion.js", "session.js"];
+  const assets = ["styles.css", "chrome.css", "games.js", "reel.js", "script.js", "illustrations.js", "motion.js", "session.js"];
   const [template, ...contents] = await Promise.all([
     readFile(path.join(process.cwd(), "src/landing/index.html"), "utf8"),
     ...assets.map((name) => readFile(path.join(process.cwd(), "public/landing", name), "utf8")),

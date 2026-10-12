@@ -32,7 +32,7 @@ export default function AboutPage() {
   return (
     <div className="page-shell about-page">
       <header className="page-hero">
-        <h1>ABOUT<span>.</span></h1>
+        <h1>겜마루 소개</h1>
         <div className="page-hero__aside page-hero__aside--copy"><p>숭실대학교 게임 제작 중앙동아리<br />SINCE 1995</p></div>
       </header>
 
@@ -61,7 +61,7 @@ export default function AboutPage() {
         <article className="reveal"><strong>현재</strong><div><h3>제작 중</h3><p>공모전, 게임잼, 스터디와 네트워킹을 이어가며 다음 게임을 만들고 있습니다.</p></div></article>
       </section>
 
-      <section className="faq-section">
+      <section className="faq-section" id="faq">
         <div className="faq-section__heading">
           <p className="eyebrow">FAQ</p>
           <h2><span>처음 시작하는 사람도</span><span>한 팀이 될 수 있습니다.</span></h2>

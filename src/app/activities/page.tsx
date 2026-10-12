@@ -26,7 +26,7 @@ export default function ActivitiesPage() {
   return (
     <div className="page-shell activity-page">
       <header className="page-hero page-hero--long">
-        <h1>ACTIVITIES<span>.</span></h1>
+        <h1>활동</h1>
         <div className="page-hero__aside page-hero__aside--copy"><p>공모전, 게임잼, 스터디와 교류</p></div>
       </header>
 

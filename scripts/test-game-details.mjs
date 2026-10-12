@@ -14,6 +14,7 @@ await mkdir("test-results/video-stills", { recursive: true });
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+  for (const base of ["reports", "personal"]) await page.route(`**/${base}/session`, (route) => route.fulfill({ json: { authenticated: false } }));
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("request", (request) => {
     if (/\.(mp4|m3u8|m4s)(?:\?|$)/.test(request.url())) errors.push(`Unexpected video download: ${request.url()}`);
@@ -111,8 +112,8 @@ try {
   }
   await page.goto(`${base}/log`, { waitUntil: "networkidle" });
   for (const [label, href] of [["INSTAGRAM", "https://www.instagram.com/ssu_gammaru"], ["YOUTUBE", "https://www.youtube.com/@gammaru9553"]]) {
-    for (const selector of [".site-footer__links", ".social-terminal__links"]) {
-      const link = page.locator(selector).getByRole("link", { name: new RegExp(label) });
+    for (const selector of [".footer-links", ".social-terminal__links"]) {
+      const link = page.locator(selector).getByRole("link", { name: new RegExp(label, "i") });
       assert.equal(await link.getAttribute("href"), href);
       assert.equal(await link.getAttribute("target"), "_blank");
       assert(!(await link.textContent()).includes("연결 예정"));

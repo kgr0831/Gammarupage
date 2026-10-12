@@ -1,25 +1,20 @@
-import Link from "next/link";
+import Image from "next/image";
 import { siteConfig } from "@/data/site";
+import { assetPath } from "@/lib/paths";
 
 export function SiteFooter() {
   return (
-    <footer className="site-footer">
-      <div className="site-footer__identity">
-        <strong>GAMMARU</strong>
-        <p>SOONGSIL UNIVERSITY<br />GAME DEVELOPMENT CLUB</p>
-      </div>
-      <div className="site-footer__links">
-        {siteConfig.social.map((item) => (
-          <a key={item.label} href={item.href} target="_blank" rel="noreferrer" title={item.pending ? "공식 주소 연결 예정" : undefined}>
-            {item.label}
-          </a>
+    <footer className="site-footer wrap">
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+      <a className="brand" href="/"><Image src={assetPath("/brand/gammaru-mark.png")} alt="" width={33} height={25} /><span>GAMMARU</span></a>
+      <p>숭실대학교 게임 제작 중앙동아리</p>
+      <div className="footer-links">
+        {siteConfig.social.filter((item) => !item.pending).map((item) => (
+          <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">{item.label === "INSTAGRAM" ? "Instagram" : "YouTube"} ↗</a>
         ))}
+        <a href={siteConfig.archiveSource} target="_blank" rel="noopener noreferrer">게임 아카이브 ↗</a>
       </div>
-      <div className="site-footer__meta">
-        <span>SINCE 1995</span>
-        <Link href="/log">모집 상태</Link>
-        <span>© {new Date().getFullYear()} GAMMARU</span>
-      </div>
+      <small>© {new Date().getFullYear()} GAMMARU</small>
     </footer>
   );
 }

@@ -95,10 +95,33 @@ try {
     { width: 320, height: 720, name: "small mobile" },
   ]) {
     const responsive = await newPage({ viewport, reducedMotion: "reduce" });
-    for (const route of ["/", "/games", "/activities", "/about", "/log"]) {
+    let homeControls;
+    for (const route of ["/", "/games", "/games/2026/winter", detailHref, "/activities", "/about", "/log"]) {
       await responsive.goto(routeUrl(route), { waitUntil: "networkidle" });
+      await responsive.evaluate(() => document.fonts.ready);
       const overflow = await responsive.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       assert(overflow <= 1, `${route} has ${overflow}px horizontal overflow at ${viewport.name}`);
+      const controls = await responsive.evaluate(() => {
+        const brand = document.querySelector('.floating-brand');
+        const menu = document.querySelector('.menu-toggle');
+        return {
+          background: getComputedStyle(document.body).backgroundColor,
+          brand: { x: brand.getBoundingClientRect().x, y: brand.getBoundingClientRect().y, size: getComputedStyle(brand).fontSize },
+          menu: { right: innerWidth - menu.getBoundingClientRect().right, y: menu.getBoundingClientRect().y, height: menu.getBoundingClientRect().height },
+        };
+      });
+      if (route === "/") homeControls = controls;
+      else {
+        assert(JSON.stringify(controls.brand) === JSON.stringify(homeControls.brand), `${route} brand differs from home at ${viewport.name}`);
+        assert(JSON.stringify(controls.menu) === JSON.stringify(homeControls.menu), `${route} menu differs from home at ${viewport.name}`);
+        assert(controls.background === "rgb(9, 9, 12)", `${route} still uses the old page background`);
+      }
+      await responsive.locator('.menu-toggle').click();
+      assert(await responsive.locator('#navigation-drawer').isVisible(), `${route} drawer did not open`);
+      assert(await responsive.evaluate(() => document.body.classList.contains('menu-open')), `${route} drawer did not lock scrolling`);
+      await responsive.keyboard.press('Escape');
+      await responsive.waitForFunction(() => document.querySelector('.menu-toggle').getAttribute('aria-expanded') === 'false');
+      assert(await responsive.locator('.menu-toggle').evaluate((el) => el === document.activeElement), `${route} did not restore keyboard focus`);
     }
     await responsive.close();
   }
@@ -119,6 +142,19 @@ try {
   await mobile.locator('#member-navigation a[href="/reports"]').waitFor();
   assert(await mobile.locator('#member-navigation a[href="/personal"]').isVisible(), "Personal session link missing");
   await mobile.keyboard.press("Escape");
+  await mobile.goto(routeUrl('/games'), { waitUntil: 'networkidle' });
+  await menu.click();
+  await mobile.locator('#member-navigation a[href="/personal"]').waitFor();
+  assert(await mobile.locator('#member-navigation a[href="/reports"]').isVisible(), 'Archive is missing the club session link');
+  await mobile.locator('#navigation a[href="/about"]').click();
+  await mobile.waitForURL(routeUrl('/about'));
+  await mobile.waitForFunction(() => !document.body.classList.contains('menu-open'));
+  assert(!(await mobile.locator('#navigation-drawer').isVisible()), 'Internal navigation left the drawer open');
+  await mobile.unroute('**/reports/session');
+  await mobile.unroute('**/personal/session');
+  for (const base of ['reports', 'personal']) await mobile.route(`**/${base}/session`, (route) => route.fulfill({ json: { authenticated: false } }));
+  await mobile.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await mobile.waitForFunction(() => document.querySelector('#member-navigation').hidden);
   await mobile.close();
 
   const about = await newPage({ viewport: { width: 1440, height: 900 } });

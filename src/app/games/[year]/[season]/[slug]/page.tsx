@@ -33,7 +33,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ yea
   return (
     <article className="game-detail page-shell">
       <nav className="breadcrumbs" aria-label="현재 위치">
-        <Link href="/games">GAMES</Link><span>/</span>
+        <Link href="/games">게임</Link><span>/</span>
         <Link href={`/games/${game.year}/${game.season}`}>{game.year} {game.seasonLabel}</Link><span>/</span>
         <span aria-current="page">{game.title}</span>
       </nav>
@@ -41,7 +41,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ yea
         <div className="game-detail__copy">
           <p className="page-code">{game.year} / {game.seasonLabel}</p>
           {game.award.code && <span className="detail-award">수상 기록 / {game.award.label}</span>}
-          <h1 style={{ fontSize: `min(clamp(2.5rem, 6.2vw, 7rem), ${(100 / Math.max(1, titleWidth)).toFixed(3)}cqw)` }}>{game.title}</h1>
+          <h1 style={{ fontSize: `min(clamp(2rem, 3.8vw, 3.4rem), ${(100 / Math.max(1, titleWidth)).toFixed(3)}cqw)` }}>{game.title}</h1>
           <p className="game-detail__team">{game.team || "팀명 자료 정리 중"}</p>
           <div className="game-detail__facts">
             <div><span>GENRE</span><strong>{game.genre || "자료 정리 중"}</strong></div>

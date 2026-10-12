@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR, Oxanium } from "next/font/google";
+import { Noto_Sans_KR, Manrope } from "next/font/google";
 import "./globals.css";
+import "./interior.css";
+import "../../public/landing/chrome.css";
 import { MotionLayer } from "@/components/MotionLayer";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -13,7 +15,7 @@ const bodyFont = Noto_Sans_KR({
   preload: false,
 });
 
-const displayFont = Oxanium({
+const displayFont = Manrope({
   variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#080918",
+  themeColor: "#09090c",
   colorScheme: "dark",
 };
 
@@ -49,7 +51,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="ko" className={`${bodyFont.variable} ${displayFont.variable}`}>
       <body>
         <a className="skip-link" href="#main-content">본문 바로가기</a>
-        <div className="site-noise" aria-hidden="true" />
         <MotionLayer />
         <SiteHeader />
         <main id="main-content">{children}</main>
