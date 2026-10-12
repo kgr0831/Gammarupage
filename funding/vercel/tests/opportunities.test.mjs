@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setup, today } from "./helpers.mjs";
+import { setup, today, dayAgo } from "./helpers.mjs";
 import { manifestFromHtml, researchState } from "../opportunities.mjs";
 
 const item = (overrides = {}) => ({ id: "club-support-example", title: "테스트 동아리 지원", sourceUrl: "https://example.org/support", benefit: "검증용 현물 혜택", eligibility: "학교 동아리 자격 확인 필요", deadline: "테스트 자료 · 실제 모집 아님", nextAction: "동아리 인정 자료를 확인하세요.", ...overrides });
@@ -10,22 +10,22 @@ const publish = async (app, date, value) => app.store.publish(await app.stage("t
 
 test("HTML metadata creates a shared persistent item; user progress survives subsequent reports and feeds the next research", async () => {
   const app = setup();
-  await publish(app, "2026-10-01", manifest());
+  await publish(app, dayAgo(2), manifest());
   await app.store.setProgress(item().id, { status: "deferred", note: "행사 예산 확정 후 검토", revision: 0 }, "admin");
   const feed = researchState(await app.store.read());
   assert.deepEqual(feed.carryForwardIds, [item().id]);
   assert.equal(feed.known[0].note, "행사 예산 확정 후 검토");
   assert.equal(feed.known[0].history, undefined);
-  await publish(app, "2026-10-02", manifest(feed.stateVersion, [item({ nextAction: "확정한 예산을 확인하세요." })]));
+  await publish(app, dayAgo(1), manifest(feed.stateVersion, [item({ nextAction: "확정한 예산을 확인하세요." })]));
   const state = await app.store.read();
   assert.equal(Object.keys(state.opportunities).length, 1);
   assert.equal(state.opportunities[item().id].status, "deferred");
   assert.equal(state.opportunities[item().id].note, "행사 예산 확정 후 검토");
-  assert.equal(state.opportunities[item().id].lastReported, "2026-10-02");
+  assert.equal(state.opportunities[item().id].lastReported, dayAgo(1));
   assert.equal(state.opportunities[item().id].history.length, 1);
   assert.equal(state.reports[0].opportunities[0].nextAction, item().nextAction, "Historic report metadata stays intact");
   const admin = await app.session("admin");
-  const historic = await (await app.request("/reports/2026-10-01?progress=1", admin)).text();
+  const historic = await (await app.request(`/reports/${dayAgo(2)}?progress=1`, admin)).text();
   assert.match(historic, /행사 예산 확정 후 검토/);
   assert.ok(historic.includes(item().nextAction), "Overview retains the facts from that report date");
   assert.doesNotMatch(historic, /확정된 예산을 확인하세요/);
@@ -33,19 +33,19 @@ test("HTML metadata creates a shared persistent item; user progress survives sub
 
 test("completed and dismissed items need a reported change to return, without resetting the user's decision", async () => {
   for (const status of ["completed", "dismissed"]) {
-    const app = setup(); await publish(app, "2026-10-01", manifest());
+    const app = setup(); await publish(app, dayAgo(2), manifest());
     await app.store.setProgress(item().id, { status, note: "운영진 결정", revision: 0 }, "admin");
     const feed = researchState(await app.store.read());
     assert.deepEqual(feed.carryForwardIds, []);
     assert.deepEqual(feed.excludedUnlessChangedIds, [item().id]);
-    await assert.rejects(publish(app, "2026-10-02", manifest(feed.stateVersion)), /변화/);
-    await publish(app, "2026-10-02", manifest(feed.stateVersion, [item({ changeNote: "공식 원문에서 다음 모집 일정 변경 확인" })]));
+    await assert.rejects(publish(app, dayAgo(1), manifest(feed.stateVersion)), /변화/);
+    await publish(app, dayAgo(1), manifest(feed.stateVersion, [item({ changeNote: "공식 원문에서 다음 모집 일정 변경 확인" })]));
     assert.equal((await app.store.read()).opportunities[item().id].status, status);
   }
 });
 
 test("stale daily research and simultaneous status edits cannot overwrite a newer decision", async () => {
-  const app = setup(); await publish(app, "2026-10-01", manifest());
+  const app = setup(); await publish(app, dayAgo(2), manifest());
   const oldVersion = (await app.store.read()).workflowVersion;
   const edits = await Promise.allSettled([
     app.store.setProgress(item().id, { status: "in_progress", note: "자료 준비", revision: 0 }, "admin"),
@@ -53,16 +53,16 @@ test("stale daily research and simultaneous status edits cannot overwrite a newe
   ]);
   assert.equal(edits.filter((result) => result.status === "fulfilled").length, 1);
   assert.equal(edits.find((result) => result.status === "rejected").reason.status, 409);
-  await assert.rejects(publish(app, "2026-10-02", manifest(oldVersion)), /기록이 변경/);
+  await assert.rejects(publish(app, dayAgo(1), manifest(oldVersion)), /기록이 변경/);
   assert.equal((await app.store.read()).reports.length, 1);
   assert.equal(Object.keys((await app.store.read()).deliveries).length, 0);
 });
 
 test("approved subscribers and admins can change shared progress; publishers and revoked members cannot", async () => {
-  const app = setup(); await publish(app, "2026-10-01", manifest());
+  const app = setup(); await publish(app, dayAgo(2), manifest());
   const admin = await app.session("admin"), publisher = await app.session("publisher"), member = await app.session("member", await app.member());
   const pathname = `/reports/opportunities/${item().id}/status`;
-  const form = { status: "in_progress", note: '<img src=x onerror="alert(1)">', revision: "0", date: "2026-10-01" };
+  const form = { status: "in_progress", note: '<img src=x onerror="alert(1)">', revision: "0", date: dayAgo(2) };
   const pendingId = await app.member("100000000000000003", "pending"), pending = await app.session("member", pendingId);
   for (const cookie of ["", pending, publisher]) assert.equal((await app.request(pathname, cookie, form)).status, 403);
   assert.equal((await app.request(pathname, admin, form, "https://other.example")).status, 403);
@@ -73,7 +73,7 @@ test("approved subscribers and admins can change shared progress; publishers and
   const response = await app.request("/reports/research-state", publisher);
   assert.equal(response.headers.get("cache-control"), "private, no-store");
   assert.equal((await response.json()).known[0].status, "in_progress");
-  const viewer = await (await app.request("/reports/2026-10-01", member)).text();
+  const viewer = await (await app.request(`/reports/${dayAgo(2)}`, member)).text();
   assert.match(viewer, /&lt;img src=x/); assert.doesNotMatch(viewer, /<img src=x/);
   assert.match(viewer, /name="status" value="deferred"/);
   assert.doesNotMatch(viewer, /<select name="status"/);
@@ -85,7 +85,7 @@ test("approved subscribers and admins can change shared progress; publishers and
 });
 
 test("one-click status updates preserve notes; note-only edits preserve status and still detect stale revisions", async () => {
-  const app = setup(); await publish(app, "2026-10-01", manifest());
+  const app = setup(); await publish(app, dayAgo(2), manifest());
   const member = await app.session("member", await app.member());
   const endpoint = `/reports/opportunities/${item().id}/status`;
   assert.equal((await app.request(endpoint, member, { note: "예산 확정 후 검토", revision: "0" })).status, 303);
@@ -102,9 +102,9 @@ test("one-click status updates preserve notes; note-only edits preserve status a
   saved = (await app.store.read()).opportunities[item().id];
   assert.equal(saved.status, "deferred");
   assert.equal(saved.note, "");
-  const filtered = await (await app.request("/reports/2026-10-01?status=completed", member)).text();
+  const filtered = await (await app.request(`/reports/${dayAgo(2)}?status=completed`, member)).text();
   assert.doesNotMatch(filtered, /class="opportunity-row"/);
-  assert.equal((await app.request("/reports/2026-10-01?status=invalid", member)).status, 400);
+  assert.equal((await app.request(`/reports/${dayAgo(2)}?status=invalid`, member)).status, 400);
 });
 
 test("malformed or hostile metadata fails staging, while duplicate source identities cannot become new items", async () => {
@@ -118,17 +118,17 @@ test("malformed or hostile metadata fails staging, while duplicate source identi
   assert.throws(() => manifestFromHtml(html().replace("application/json", "text/javascript")));
   assert.throws(() => manifestFromHtml(html().replace("</body>", html() + "</body>")));
   assert.equal(manifestFromHtml("<html><body>Legacy</body></html>"), null);
-  const app = setup(); await publish(app, "2026-10-01", manifest());
-  await assert.rejects(publish(app, "2026-10-02", manifest(1, [item({ id: "another-id", sourceUrl: "https://example.org/support/?utm_source=daily#content" })])), /기존 ID/);
-  await assert.rejects(publish(app, "2026-10-02", manifest(1, [item({ sourceUrl: "https://example.org/different" })])), /다른 기회/);
+  const app = setup(); await publish(app, dayAgo(2), manifest());
+  await assert.rejects(publish(app, dayAgo(1), manifest(1, [item({ id: "another-id", sourceUrl: "https://example.org/support/?utm_source=daily#content" })])), /기존 ID/);
+  await assert.rejects(publish(app, dayAgo(1), manifest(1, [item({ sourceUrl: "https://example.org/different" })])), /다른 기회/);
 });
 
 test("existing report metadata can be attached once without rewriting HTML or sending another notification", async () => {
-  const app = setup(); await app.store.publish(await app.stage("test-owner", "2026-10-01"), today);
+  const app = setup(); await app.store.publish(await app.stage("test-owner", dayAgo(2)), today);
   const before = (await app.store.read()).reports[0], original = await app.store.html(before);
   const admin = await app.session("admin"), publisher = await app.session("publisher");
   const input = { manifest: JSON.stringify(manifest()) };
-  const endpoint = "/reports/2026-10-01/opportunities";
+  const endpoint = `/reports/${dayAgo(2)}/opportunities`;
   assert.equal((await app.request(endpoint, publisher, input)).status, 403);
   assert.equal((await app.request(endpoint, admin, input)).status, 303);
   assert.equal((await app.request(endpoint, admin, input)).status, 409);

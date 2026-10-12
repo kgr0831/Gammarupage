@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { briefConfig } from "../config.mjs";
-import { setup, today, sampleHtml } from "./helpers.mjs";
+import { setup, today, sampleHtml, dayAgo } from "./helpers.mjs";
 import { BriefStore, PrivateBlobFiles } from "../storage.mjs";
 import { digest } from "../../schema.mjs";
 import { deliverBriefLinks, formatBriefMessage } from "../notify.mjs";
@@ -92,9 +92,9 @@ test("conditional writes across serverless instances preserve both updates and d
   assert.equal(await app.store.html((await app.store.read()).reports[0]), sampleHtml);
 });
 
-test("all previous reports remain reachable through paginated searchable archive; backfills do not DM", async () => {
+test("archive pagination and search remain available; recent backfills do not DM", async () => {
   const app = setup(); await app.member();
-  await app.store.publish(await app.stage("owner", "2020-01-01"), today);
+  await app.store.publish(await app.stage("owner", dayAgo(1)), today);
   await app.store.publish(await app.stage(), today);
   assert.equal(Object.keys((await app.store.read()).deliveries).length, 1);
   const reports = Array.from({ length: 95 }, (_, i) => ({ date: new Date(Date.UTC(2020, 0, i + 1)).toISOString().slice(0, 10), title: `보고서 ${i}`, summary: "검색 대상" }));

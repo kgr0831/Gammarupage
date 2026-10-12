@@ -4,7 +4,7 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
-import { setup, sampleHtml, today } from "./helpers.mjs";
+import { setup, sampleHtml, today, dayAgo } from "./helpers.mjs";
 import { createSiteHandler } from "../router.mjs";
 import { BriefStore } from "../storage.mjs";
 
@@ -176,7 +176,7 @@ try {
   await publisher.goto(`${app.config.origin}/reports/upload?guide=1`);
   await publisher.getByRole("link", { name: "HTML 업로드로 돌아가기", exact: true }).click();
   await publisher.getByText("파일 대신 HTML 내용 붙여넣기", { exact: true }).click();
-  await publisher.getByLabel("발행일", { exact: true }).fill("2020-01-01");
+  await publisher.getByLabel("발행일", { exact: true }).fill(dayAgo(1));
   await publisher.getByLabel("보고서 제목", { exact: true }).fill("붙여넣기 검증용 과거 보고서");
   await publisher.getByLabel("HTML 전체 내용", { exact: true }).fill(sampleHtml);
   assert.equal(await publisher.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
@@ -185,7 +185,7 @@ try {
   await publisher.frameLocator("iframe").getByRole("heading", { name: "가상 보고서 · 실제 공고 아님" }).waitFor();
   await publisher.getByLabel("내용을 확인했고 보고서 등록에 동의합니다.").check();
   await publisher.getByRole("button", { name: "이 HTML 등록하기" }).click();
-  await publisher.getByText("2020-01-01 보고서를 등록했습니다.", { exact: false }).waitFor();
+  await publisher.getByText(`${dayAgo(1)} 보고서를 등록했습니다.`, { exact: false }).waitFor();
   await publisher.getByText("알림 기록이 없습니다.", { exact: false }).waitFor();
   await publisher.reload();
   assert.equal((await app.store.read()).reports.length, 2);

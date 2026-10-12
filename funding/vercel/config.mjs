@@ -17,6 +17,8 @@ export function briefConfig(request, env = process.env) {
     adminUsername: env.FUNDING_ADMIN_USERNAME || "admin",
     publisherToken: publisherToken.length >= 32 && publisherToken !== token ? publisherToken : "",
     blobToken: env.BLOB_READ_WRITE_TOKEN || "",
+    storageBackend: env.REPORTS_STORAGE_BACKEND || "blob",
+    s3: { bucket: env.REPORTS_S3_BUCKET || "", region: env.REPORTS_S3_REGION || "ap-northeast-2", expectedOwner: env.REPORTS_S3_ACCOUNT_ID || "", roleArn: env.REPORTS_AWS_ROLE_ARN || "" },
     discordApplicationId: env.DISCORD_APPLICATION_ID || "",
     discordClientSecret: env.DISCORD_CLIENT_SECRET || "",
     discordBotToken: env.DISCORD_BOT_TOKEN || "",

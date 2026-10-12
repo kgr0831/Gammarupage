@@ -113,6 +113,7 @@ export function researchState(state, personal = false) {
   }).sort((a, b) => b.lastReported.localeCompare(a.lastReported) || a.id.localeCompare(b.id));
   return {
     version: 1, stateVersion: state.workflowVersion, generatedAt: new Date().toISOString(),
+    reportRetention: { days: 7, timezone: "Asia/Seoul", includesToday: true, preserved: "known, item IDs, progress and notes survive HTML deletion" },
     statuses: progressLabels, categories: personal ? personalCategoryLabels : { support: categoryLabels.support }, audience: personal ? "personal" : "club",
     ...(!personal ? { researchPolicy: {
       version: "club-resources-2026-10-06",

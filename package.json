@@ -33,7 +33,9 @@
     "preview:reel": "node scripts/preview-reel.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
     "@vercel/blob": "^2.8.0",
+    "@vercel/oidc-aws-credentials-provider": "^3.3.11",
     "hls.js": "1.7.2",
     "next": "16.3.4",
     "react": "19.2.8",

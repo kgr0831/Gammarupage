@@ -4,7 +4,8 @@ import path from "node:path";
 import { check, digest } from "../schema.mjs";
 import { seoulClock } from "../clock.mjs";
 import { briefConfig } from "./config.mjs";
-import { BriefStore, PrivateBlobFiles } from "./storage.mjs";
+import { createReportStore } from "./store-factory.mjs";
+import { retainedReports } from "./retention.mjs";
 import { deliverBriefLinks, deliverLoginNotice, deliverApprovalNotice } from "./notify.mjs";
 import * as view from "./views.mjs";
 import { readableReport } from "./reader.mjs";
@@ -50,7 +51,7 @@ function userProfile(user) {
 export function createBriefHandler({ config: fixedConfig, store: fixedStore, fetch: fetcher = fetch, after = () => {}, now = () => new Date() } = {}) {
   return async function handle(request) {
     const config = fixedConfig || briefConfig(request);
-    const store = fixedStore || new BriefStore(new PrivateBlobFiles(config.blobToken), isPersonal(config) ? "personal/briefs" : "gammaru/briefs");
+    let store = fixedStore;
     const headers = new Headers(security);
     const send = (html, status = 200, mime = "text/html; charset=utf-8") => { headers.set("Content-Type", mime); return new Response(mime.startsWith("text/html") ? mountedPage(html, config) : html, { status, headers }); };
     const redirect = (target) => { headers.set("Location", mountedTarget(target, config)); return new Response(null, { status: 303, headers }); };
@@ -92,6 +93,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       m.approval_notice = { id, createdAt: Date.now(), status: transportReady ? "pending" : "unavailable" };
     };
     try {
+      store ||= createReportStore(config);
       check(config.configured, "보고서 저장소와 로그인 설정을 준비 중입니다.", 503);
       const url = new URL(request.url);
       const incomingPath = url.pathname.replace(/\/$/, ""), basePath = reportBasePath(config);
@@ -108,6 +110,7 @@ export function createBriefHandler({ config: fixedConfig, store: fixedStore, fet
       // Public pages check this endpoint too; guests need no Blob read.
       if (pathname === "/reports/session" && request.method === "GET" && !cookies[cookieName]) return send(JSON.stringify({ authenticated: false }), 200, "application/json; charset=utf-8");
       const data = await store.read();
+      data.reports = retainedReports(data.reports, seoulClock(now()).date);
       const savedSession = data.sessions[sessionHash];
       const session = savedSession?.expires > Date.now() && savedSession.proof === proof(savedSession.role) && validDiscordOwnerSession(data, savedSession) ? savedSession : null;
       const member = session?.role === "member" ? data.members[session.subject] : null;

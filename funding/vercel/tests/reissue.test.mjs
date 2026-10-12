@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setup, today } from "./helpers.mjs";
+import { setup, today, dayAgo } from "./helpers.mjs";
 import { BriefStore } from "../storage.mjs";
 import { researchState } from "../opportunities.mjs";
 import { deliverBriefLinks } from "../notify.mjs";
@@ -119,7 +119,7 @@ test("legacy reports and deliveries count as v1; past-date and opt-out revisions
   assert.equal(state.reports[0].revision, 2);
   assert.equal(Object.values(state.deliveries).length, 1);
   assert.equal(Object.values(state.deliveries)[0].status, "cancelled");
-  const past = "2020-01-01";
+  const past = dayAgo(1);
   await app.store.publish(await app.store.stage(input(2, { date: past }), "owner", today), today);
   await app.store.publish(await app.store.stage(revised(3, { date: past }), "owner", today), today);
   state = await app.store.read();

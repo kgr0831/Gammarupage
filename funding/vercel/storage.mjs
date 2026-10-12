@@ -1,9 +1,10 @@
-import { get, put, BlobError, BlobPreconditionFailedError, BlobStoreSuspendedError } from "@vercel/blob";
+import { get, put, del, list, BlobError, BlobPreconditionFailedError, BlobStoreSuspendedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
 import { changeMemberProgress } from "./member-progress.mjs";
 import { reportRevision, deliveryKey } from "./report-versions.mjs";
+import { requireRetainedDate } from "./retention.mjs";
 
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
 function storageError(error) {
@@ -50,6 +51,22 @@ export class PrivateBlobFiles {
       throw storageError(error);
     }
   }
+  async remove(path) {
+    check(this.token, "Vercel의 비공개 파일 저장소 연결이 필요합니다.", 503);
+    try { await del(path, { token: this.token, abortSignal: AbortSignal.timeout(15000) }); }
+    catch (error) { throw storageError(error); }
+  }
+  async list(prefix) {
+    check(["gammaru/briefs/", "personal/briefs/"].includes(prefix), "Invalid report prefix.");
+    const rows = []; let cursor;
+    do {
+      const result = await list({ token: this.token, prefix, cursor, limit: 1000, abortSignal: AbortSignal.timeout(15000) });
+      rows.push(...result.blobs.map(row => ({ pathname: row.pathname, size: row.size })));
+      cursor = result.hasMore ? result.cursor : null;
+      check(!result.hasMore || cursor, "Incomplete Blob listing.", 502);
+    } while (cursor);
+    return rows;
+  }
 }
 
 export class BriefStore {
@@ -83,6 +100,7 @@ export class BriefStore {
     check(false, "다른 변경이 처리 중입니다. 잠시 후 다시 시도해 주세요.", 409);
   }
   async stage(input, owner, today) {
+    requireRetainedDate(input.date, today);
     check(/^\d{4}-\d{2}-\d{2}$/.test(input.date) && Number.isFinite(Date.parse(input.date)) && new Date(input.date).toISOString().slice(0, 10) === input.date && input.date <= today, "유효한 발행일을 입력해 주세요. 미래 날짜는 사용할 수 없습니다.");
     check(typeof input.title === "string" && input.title.trim().length > 0 && input.title.length <= 150, "제목은 1~150자로 입력해 주세요.");
     check(typeof input.summary === "string" && input.summary.length <= 500, "요약은 500자까지 입력할 수 있습니다.");
@@ -110,6 +128,7 @@ export class BriefStore {
     return draft;
   }
   async publish(draft, today, channelId = "", personalOwnerId = "", personalAccountMode = false, { allowPersonalChannel = false } = {}) {
+    requireRetainedDate(draft.date, today);
     const personal = personalAccountMode || !!personalOwnerId;
     const manifest = manifestFromHtml(draft.html);
     check(!personal || manifest?.audience === "personal", "최신 개인 보고서 지침에 맞게 audience: personal과 분야 정보를 넣어 다시 미리보기해 주세요.", 409);

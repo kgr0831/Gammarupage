@@ -5,10 +5,12 @@ import { digest } from "../../schema.mjs";
 import { seoulClock } from "../../clock.mjs";
 
 export const today = seoulClock().date;
+export const dayAgo = (days) => new Date(Date.parse(`${today}T00:00:00Z`) - days * 86400000).toISOString().slice(0, 10);
 export const sampleHtml = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>검증용 보고서</title><style>body{background:#080918;color:#f4f0e8;font:18px sans-serif;padding:30px}h1{color:#ef62bd}</style></head><body><h1>가상 보고서 · 실제 공고 아님</h1><p>겜마루의 외부 후원과 운영자금 정보</p><a href="https://example.org" target="_blank">공식 원문 예시</a></body></html>';
 export class MemoryFiles {
   constructor() { this.rows = new Map(); this.sequence = 0; }
   async read(key) { return this.rows.get(key) ? { ...this.rows.get(key) } : null; }
+  async remove(key) { this.rows.delete(key); }
   async write(key, text, etag = null) {
     const old = this.rows.get(key);
     if ((etag === null && old) || (etag !== null && old?.etag !== etag)) throw Object.assign(new Error("conflict"), { conflict: true });

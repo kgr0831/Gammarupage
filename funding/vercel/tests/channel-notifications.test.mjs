@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setup, today } from "./helpers.mjs";
+import { setup, today, dayAgo } from "./helpers.mjs";
 import { deliverBriefLinks } from "../notify.mjs";
 import { BriefStore } from "../storage.mjs";
 import { digest } from "../../schema.mjs";
@@ -50,7 +50,7 @@ test("switching to a channel cancels pending DMs and permits an explicit one-tim
 test("channel publication respects notify opt-out and historical dates; missing or invalid targets cannot become DMs", async () => {
   const app = setup({ dmEnabled: true, discordReportChannelId: channelId }); await app.member();
   await app.store.publish({ ...await app.stage(), notify: false }, today, channelId);
-  await app.store.publish(await app.stage("past", "2020-01-01"), today, channelId);
+  await app.store.publish(await app.stage("past", dayAgo(1)), today, channelId);
   assert.equal(Object.values((await app.store.read()).deliveries).length, 0);
   await assert.rejects(app.store.queueChannelReport("2020-01-02", channelId), /오늘 등록된 보고서/);
   await assert.rejects(app.store.queueChannelReport(today, "invalid"), /채널 설정/);

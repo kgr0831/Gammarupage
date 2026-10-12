@@ -1,0 +1,35 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReportBucketSetup",
+      "Effect": "Allow",
+      "Action": ["s3:CreateBucket", "s3:GetBucketLocation", "s3:ListBucket", "s3:GetBucketPublicAccessBlock", "s3:PutBucketPublicAccessBlock", "s3:GetEncryptionConfiguration", "s3:PutEncryptionConfiguration", "s3:GetBucketOwnershipControls", "s3:PutBucketOwnershipControls", "s3:GetLifecycleConfiguration", "s3:PutLifecycleConfiguration", "s3:GetBucketVersioning"],
+      "Resource": "arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul"
+    },
+    {
+      "Sid": "ReportDataMigration",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": ["arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul/gammaru/briefs/*", "arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul/personal/briefs/*"]
+    },
+    {
+      "Sid": "VercelReportIdentityProvider",
+      "Effect": "Allow",
+      "Action": ["iam:GetOpenIDConnectProvider", "iam:CreateOpenIDConnectProvider"],
+      "Resource": "arn:aws:iam::066523631431:oidc-provider/oidc.vercel.com/kgr0831s-projects"
+    },
+    {
+      "Sid": "VercelReportRole",
+      "Effect": "Allow",
+      "Action": ["iam:GetRole", "iam:CreateRole", "iam:UpdateAssumeRolePolicy", "iam:PutRolePolicy", "iam:GetRolePolicy"],
+      "Resource": "arn:aws:iam::066523631431:role/gammaru-reports-vercel"
+    },
+    {
+      "Sid": "ReadCreditBalance",
+      "Effect": "Allow",
+      "Action": "billing:GetCredits",
+      "Resource": "*"
+    }
+  ]
+}
