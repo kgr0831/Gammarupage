@@ -1,0 +1,119 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09090c">
+  <meta name="description" content="1995년부터 게임을 만들어 온 숭실대학교 게임 제작 중앙동아리, 겜마루.">
+  <title>GAMMARU — 숭실대학교 게임 제작 중앙동아리</title>
+  <link rel="canonical" href="{{SITE_URL}}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="GAMMARU — THE BUILD IS OUR INTRODUCTION.">
+  <meta property="og:description" content="1995년부터 게임을 만들어 온 숭실대학교 게임 제작 중앙동아리, 겜마루.">
+  <meta property="og:url" content="{{SITE_URL}}">
+  <meta property="og:image" content="{{SITE_URL}}brand/hero-end-frame.png">
+  <link rel="icon" href="/brand/gammaru-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/landing/styles.css?v={{LANDING_VERSION}}">
+  <script src="/landing/games.js?v={{LANDING_VERSION}}" defer></script>
+  <script src="/landing/reel.js?v={{LANDING_VERSION}}" defer></script>
+  <script src="/landing/script.js?v={{LANDING_VERSION}}" defer></script>
+  <script src="/landing/illustrations.js?v={{LANDING_VERSION}}" defer></script>
+  <script src="/landing/motion.js?v={{LANDING_VERSION}}" defer></script>
+  <script src="/landing/session.js?v={{LANDING_VERSION}}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">본문 바로가기</a>
+  <a class="brand floating-brand" href="#home" aria-label="겜마루 처음으로"><img src="/brand/gammaru-mark.png" alt="" width="39" height="29"><span>GAMMARU</span></a>
+  <button class="menu-toggle" type="button" aria-controls="navigation-drawer" aria-haspopup="dialog" aria-expanded="false">메뉴 <span class="menu-lines" aria-hidden="true"></span></button>
+  <dialog class="navigation-drawer" id="navigation-drawer" aria-label="페이지 메뉴">
+    <div class="drawer-top"><a class="brand" href="#home"><img src="/brand/gammaru-mark.png" alt="" width="39" height="29"><span>GAMMARU</span></a><button class="drawer-close" type="button" aria-label="메뉴 닫기">×</button></div>
+    <nav id="navigation" aria-label="페이지 이동"><a href="#home">처음으로</a><a href="#games">게임</a><a href="#about">겜마루 소개</a><a href="#activities">활동</a><a href="#log">활동 기록</a><a href="#faq">자주 묻는 질문</a></nav>
+    <nav id="member-navigation" class="member-navigation" aria-label="내 보고서" hidden></nav>
+    <div class="drawer-links"><a href="https://www.instagram.com/ssu_gammaru" target="_blank" rel="noopener noreferrer">모집 안내 ↗</a><a href="/games">게임 아카이브 →</a></div>
+  </dialog>
+  <main id="main">
+    <section class="hero" id="home" aria-labelledby="hero-title">
+      <div class="hero-reel" aria-hidden="true">
+        <img class="reel-poster" src="/media/reel/b50237e4bd9a/poster.webp" alt="" fetchpriority="high">
+        <video class="reel-video" muted loop playsinline preload="none" tabindex="-1" disablepictureinpicture></video>
+        <div class="reel-shade"></div>
+      </div>
+      <div class="pixel-world" data-illustration="world" data-motion-graphic aria-hidden="true"></div>
+      <div class="hero-logo" aria-hidden="true">
+        <img class="hero-original-logo" src="/brand/gammaru-3d.png" alt="" width="2048" height="2048">
+      </div>
+      <div class="hero-inner wrap">
+        <div class="hero-copy">
+          <h1 id="hero-title"><span class="title-line"><span>THE BUILD</span></span><span class="title-line title-outline"><span>IS OUR</span></span><span class="title-line hero-introduction"><span>INTRODUCTION.</span></span></h1>
+          <p class="hero-description">숭실대학교 게임 제작 중앙동아리</p>
+          <div class="hero-actions"><a class="button" href="#games">게임 보기 <span aria-hidden="true">↗</span></a><a class="quiet-link" href="#about">겜마루 소개 <span aria-hidden="true">→</span></a></div>
+        </div>
+        <div class="hero-bottom">
+          <aside class="reel-credits" aria-label="현재 영상의 게임과 제작자" aria-live="off" hidden><ul></ul></aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="games-section wrap section-space" id="games" aria-labelledby="games-title">
+      <div class="section-heading reveal"><h2 id="games-title">게임</h2><a class="quiet-link" href="/games">전체 게임 <span aria-hidden="true">↗</span></a></div>
+      <div class="gallery-toolbar"><div class="filter-group" role="group" aria-label="작품 시즌 필터"><button type="button" data-filter="all" aria-pressed="true">전체</button><button type="button" data-filter="summer" aria-pressed="false">여름 공모전</button><button type="button" data-filter="winter" aria-pressed="false">겨울 공모전</button><button type="button" data-filter="gamejam" aria-pressed="false">게임잼</button></div><span class="gallery-count" role="status" aria-live="polite">6개 작품</span></div>
+      <div class="game-grid" id="game-grid"></div>
+      <noscript><p><a href="/games">게임 아카이브 →</a></p></noscript>
+    </section>
+
+    <section class="about-section" id="about" aria-labelledby="about-title"><div class="wrap section-space">
+      <div class="about-intro reveal"><h2 id="about-title">겜마루 소개</h2><div class="about-copy"><p>1995년 설립된 숭실대학교 게임 제작 중앙동아리. 기획·프로그래밍·아트·사운드 분야의 학생들이 팀을 구성해 게임 제작.</p><p>숭실대학교 학생 대상. 전공·학년과 관계없이 참여 가능.</p></div></div>
+      <div class="roles-section" aria-labelledby="roles-title">
+        <div class="role-art"><h2 id="roles-title" class="reveal">제작 분야</h2>
+          <div class="role-graphics" data-illustration="roles" data-motion-graphic aria-hidden="true"></div>
+        </div>
+        <div class="role-workspace reveal">
+          <div class="role-list" role="tablist" aria-label="게임 제작 역할">
+            <button id="tab-planning" type="button" role="tab" aria-selected="true" aria-controls="panel-planning" data-role="planning">기획</button>
+            <button id="tab-programming" type="button" role="tab" aria-selected="false" aria-controls="panel-programming" tabindex="-1" data-role="programming">프로그래밍</button>
+            <button id="tab-art" type="button" role="tab" aria-selected="false" aria-controls="panel-art" tabindex="-1" data-role="art">아트</button>
+            <button id="tab-sound" type="button" role="tab" aria-selected="false" aria-controls="panel-sound" tabindex="-1" data-role="sound">사운드</button>
+          </div>
+          <div class="role-panel" id="panel-planning" role="tabpanel" aria-labelledby="tab-planning" tabindex="0"><h3>규칙·레벨·밸런스 설계</h3><p>핵심 플레이 구조와 진행 방식 설계. 기획서 작성과 팀의 제작 방향 정리.</p></div>
+          <div class="role-panel" id="panel-programming" role="tabpanel" aria-labelledby="tab-programming" tabindex="0" hidden><h3>게임 시스템 구현</h3><p>Unity, Unreal 등으로 입력·규칙·피드백 구현. 빌드 제작과 반복 개선.</p></div>
+          <div class="role-panel" id="panel-art" role="tabpanel" aria-labelledby="tab-art" tabindex="0" hidden><h3>그래픽·애니메이션·UI 제작</h3><p>2D·3D 캐릭터와 배경, 애니메이션, 게임 화면의 인터페이스 제작.</p></div>
+          <div class="role-panel" id="panel-sound" role="tabpanel" aria-labelledby="tab-sound" tabindex="0" hidden><h3>음악·효과음 제작</h3><p>배경음악과 효과음 제작. 장면과 플레이 동작에 맞춰 게임에 적용.</p></div>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="activities-section wrap section-space" id="activities" aria-labelledby="activities-title">
+      <div class="activity-heading"><h2 id="activities-title" class="reveal">활동</h2><div class="activity-scene" data-illustration="studio" data-motion-graphic aria-hidden="true"></div></div>
+      <div class="activity-list">
+        <article class="activity-row reveal"><h3>여름·겨울 공모전</h3><p>방학 중 팀·개인 게임 제작. 기획, 중간 진행, 최종 빌드 발표.</p></article>
+        <article class="activity-row reveal"><h3>게임잼</h3><p>새 주제와 팀으로 72시간 안에 플레이 가능한 게임 제작.</p></article>
+        <article class="activity-row reveal"><h3>보드게임잼</h3><p>제한된 재료와 시간 안에 규칙을 설계하고 직접 플레이.</p></article>
+        <article class="activity-row reveal"><h3>스터디·아무말 발표회</h3><p>Unity, Unreal, Ren'Py, 아트, 게임 수학, 기획 학습과 발표.</p></article>
+        <article class="activity-row reveal"><h3>OBYB·업계 교류</h3><p>선배·현업자 피드백, 진로 멘토링, 다른 대학 동아리와의 교류.</p></article>
+      </div>
+    </section>
+
+    <section class="log-section" id="log" aria-labelledby="log-title"><div class="wrap section-space">
+      <h2 id="log-title" class="reveal">활동 기록</h2>
+      <div class="log-list">
+        <article class="log-row reveal"><time datetime="2026-09">2026.09</time><div><h3>PARTY FORMATION COMPLETE</h3><p>이번 시즌의 팀 구성 완료.</p></div></article>
+        <article class="log-row reveal"><time datetime="2026-02">2026.02</time><div><h3>2026 겨울 공모전 최종 발표</h3><p>기획·중간 발표를 거쳐 완성된 게임 공유.</p></div></article>
+        <article class="log-row reveal"><time datetime="2025-12">2025.12</time><div><h3>2025 겜마루 게임잼</h3><p>새로운 팀을 구성해 제한 시간 안에 게임 제작.</p></div></article>
+      </div>
+      <a class="quiet-link log-link" href="https://www.instagram.com/ssu_gammaru" target="_blank" rel="noopener noreferrer">인스타그램 <span aria-hidden="true">↗</span></a>
+    </div></section>
+
+    <section class="faq wrap section-space" id="faq" aria-labelledby="faq-title"><h2 id="faq-title">자주 묻는 질문</h2><div class="faq-list">
+      <details><summary>개발 경험이 없어도 참여할 수 있나요?<span aria-hidden="true">＋</span></summary><p>가능합니다. 스터디에서 배우고 팀 프로젝트에 참여할 수 있습니다.</p></details>
+      <details><summary>관련 전공이어야 하나요?<span aria-hidden="true">＋</span></summary><p>전공·학년 제한은 없습니다. 게임 제작에 관심 있는 숭실대학교 학생이 대상이며, 기획·아트·사운드로도 참여할 수 있습니다.</p></details>
+      <details><summary>모집 소식은 어디서 확인하나요?<span aria-hidden="true">＋</span></summary><p>공식 인스타그램의 모집 공지에서 일정과 지원 방법을 확인해 주세요.</p></details>
+    </div></section>
+  </main>
+  <footer class="site-footer wrap"><a class="brand" href="#home"><img src="/brand/gammaru-mark.png" alt="" width="33" height="25"><span>GAMMARU</span></a><p>숭실대학교 게임 제작 중앙동아리</p><div class="footer-links"><a href="https://www.instagram.com/ssu_gammaru" target="_blank" rel="noopener noreferrer">Instagram ↗</a><a href="https://www.youtube.com/@gammaru9553" target="_blank" rel="noopener noreferrer">YouTube ↗</a><a href="https://gammaruforever.github.io/" target="_blank" rel="noopener noreferrer">게임 아카이브 ↗</a></div><small>© <span id="current-year">2026</span> GAMMARU</small></footer>
+  <dialog class="game-dialog" aria-labelledby="dialog-title"><button class="dialog-close" type="button" aria-label="작품 상세 닫기">×</button><img class="dialog-image" src="/archive/games/g-2025-wi-001/cover.webp" alt=""><div class="dialog-content"><p id="dialog-event"></p><h2 id="dialog-title"></h2><p id="dialog-description"></p><dl class="dialog-credits"></dl><a class="button" id="dialog-download" target="_blank" rel="noopener noreferrer" hidden>다운로드 페이지 <span aria-hidden="true">↗</span></a></div></dialog>
+</body>
+</html>

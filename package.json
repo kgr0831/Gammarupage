@@ -23,7 +23,7 @@
     "reports:test:browser": "node funding/vercel/tests/browser.mjs && node funding/vercel/tests/oauth-browser.mjs",
     "typecheck": "tsc --noEmit",
     "test:smoke": "node scripts/smoke.mjs",
-    "test:reel": "node scripts/test-hero-reel.mjs",
+    "test:reel": "node scripts/test-landing-reel.mjs",
     "test:details": "node scripts/test-game-details.mjs",
     "import:archive": "node scripts/import-archive.mjs --download-media",
     "assets:brand": "node scripts/build-brand-assets.mjs",

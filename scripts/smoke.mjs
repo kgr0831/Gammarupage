@@ -5,6 +5,11 @@ const targetBase = new URL(`${baseUrl.replace(/\/+$/, "")}/`);
 const basePath = targetBase.pathname.replace(/\/$/, "");
 const browser = await launchBrowser();
 const errors = [];
+async function newPage(options) {
+  const page = await browser.newPage(options);
+  for (const base of ["reports", "personal"]) await page.route(`**/${base}/session`, (route) => route.fulfill({ json: { authenticated: false } }));
+  return page;
+}
 
 const routeUrl = (route) => {
   if (/^https?:\/\//.test(route)) return route;
@@ -14,7 +19,7 @@ const routeUrl = (route) => {
 
 try {
   // Media loading/looping is covered separately by test:reel.
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
+  const page = await newPage({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
   page.on("pageerror", (error) => errors.push(`pageerror: ${String(error)}`));
   page.on("response", (response) => {
     if (response.status() >= 400) errors.push(`response: ${response.status()} ${response.url()}`);
@@ -50,26 +55,46 @@ try {
   assert((await page.locator(".archive-count").textContent())?.includes("1개 작품"), "Archive result count did not update");
 
   await page.goto(routeUrl("/"), { waitUntil: "networkidle" });
-  const reel = page.locator(".hero-reel");
-  const reelTopBeforeScroll = await reel.evaluate((element) => Math.round(element.getBoundingClientRect().top));
-  await page.evaluate(() => window.scrollTo(0, Math.min(window.innerHeight, document.documentElement.scrollHeight - window.innerHeight)));
-  await page.waitForTimeout(120);
-  const reelTopAfterScroll = await reel.evaluate((element) => Math.round(element.getBoundingClientRect().top));
-  assert(reelTopBeforeScroll === 0 && reelTopAfterScroll === 0, "Home reel is not fixed to the viewport");
-  await page.evaluate(() => window.scrollTo(0, 0));
+  assert(await page.locator(".game-card").count() === 6, "Landing gallery is missing games");
+  await page.locator('[data-filter="winter"]').click();
+  assert(await page.locator(".game-card:visible").count() === 1, "Landing season filter failed");
+  await page.locator(".game-card:visible").click();
+  assert(await page.locator(".game-dialog").isVisible(), "Game details did not open");
+  assert((await page.locator("#dialog-title").textContent()) === "Cosmos Walker", "Wrong game opened");
+  assert((await page.locator("#dialog-download").getAttribute("href"))?.startsWith("https://"), "Download destination missing");
+  await page.keyboard.press("Escape");
+  assert(!(await page.locator(".game-dialog").isVisible()), "Game dialog did not close");
+  await page.locator('[data-filter="all"]').click();
+  await page.getByRole("tab", { name: "기획", exact: true }).focus();
+  await page.keyboard.press("ArrowRight");
+  assert((await page.locator("#tab-programming").getAttribute("aria-selected")) === "true", "Role keyboard navigation failed");
+  assert(await page.locator("#panel-programming").isVisible(), "Selected role panel hidden");
+  await page.locator(".faq summary").first().click();
+  assert(await page.locator(".faq details").first().getAttribute("open") !== null, "FAQ did not open");
+  for (const image of await page.locator(".game-card img").all()) {
+    await image.scrollIntoViewIfNeeded();
+    await image.evaluate((element) => element.decode());
+    assert(await image.evaluate((element) => element.naturalWidth > 0), "Game cover failed to load");
+  }
+  await page.goto(routeUrl("/games"), { waitUntil: "networkidle" });
   const detailHref = await page.locator(".game-card").first().getAttribute("href");
   assert(Boolean(detailHref), "Featured game did not expose a detail link");
   const detailResponse = await page.goto(routeUrl(detailHref), { waitUntil: "networkidle" });
   assert(detailResponse && detailResponse.status() < 400, "Featured game detail failed to load");
   assert((await page.title()).includes("GAMMARU"), "Game detail metadata is missing");
+  await page.locator(".site-brand").click();
+  await page.waitForURL(routeUrl("/"));
+  await page.locator(".game-card").first().waitFor();
+  assert(await page.locator(".game-card").count() === 6, "Returning home did not initialize the new landing");
 
   for (const viewport of [
     { width: 1280, height: 800, name: "16:10 laptop" },
     { width: 1440, height: 900, name: "16:10 desktop" },
     { width: 1920, height: 1080, name: "full HD" },
     { width: 390, height: 844, name: "mobile" },
+    { width: 320, height: 720, name: "small mobile" },
   ]) {
-    const responsive = await browser.newPage({ viewport, reducedMotion: "reduce" });
+    const responsive = await newPage({ viewport, reducedMotion: "reduce" });
     for (const route of ["/", "/games", "/activities", "/about", "/log"]) {
       await responsive.goto(routeUrl(route), { waitUntil: "networkidle" });
       const overflow = await responsive.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -78,18 +103,25 @@ try {
     await responsive.close();
   }
 
-  const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  const mobile = await newPage({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
   await mobile.goto(routeUrl("/"), { waitUntil: "networkidle" });
   const menu = mobile.locator(".menu-toggle");
   assert(await menu.isVisible(), "Mobile menu is not visible");
   await menu.click();
   assert((await menu.getAttribute("aria-expanded")) === "true", "Mobile menu did not open");
-  await mobile.locator(".site-nav").getByRole("link", { name: "ABOUT", exact: true }).click();
-  await mobile.waitForURL((url) => url.pathname.replace(/\/$/, "") === `${basePath}/about`);
+  await mobile.locator("#navigation").getByRole("link", { name: "겜마루 소개", exact: true }).click();
+  await mobile.waitForURL((url) => url.hash === "#about");
   assert((await menu.getAttribute("aria-expanded")) === "false", "Mobile menu did not close after navigation");
+  await mobile.route("**/reports/session", (route) => route.fulfill({ json: { authenticated: true, role: "member", subscription: "approved", canRead: true } }));
+  await mobile.route("**/personal/session", (route) => route.fulfill({ json: { authenticated: true, role: "member", canRead: true } }));
+  await mobile.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await menu.click();
+  await mobile.locator('#member-navigation a[href="/reports"]').waitFor();
+  assert(await mobile.locator('#member-navigation a[href="/personal"]').isVisible(), "Personal session link missing");
+  await mobile.keyboard.press("Escape");
   await mobile.close();
 
-  const about = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const about = await newPage({ viewport: { width: 1440, height: 900 } });
   await about.goto(routeUrl("/about"), { waitUntil: "networkidle" });
   await about.locator(".faq-section").scrollIntoViewIfNeeded();
   await about.waitForTimeout(1100);

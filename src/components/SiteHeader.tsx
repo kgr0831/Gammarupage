@@ -66,10 +66,12 @@ export function SiteHeader() {
 
   return (
     <header className={`site-header${scrolled ? " site-header--solid" : ""}`}>
-      <Link href="/" className="site-brand" aria-label="겜마루 홈">
+      {/* The landing route serves a full HTML document; always load its scripts afresh. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+      <a href="/" className="site-brand" aria-label="겜마루 홈">
         <Image src={assetPath("/brand/gammaru-mark.png")} alt="" width={38} height={30} priority />
         <span>GAMMARU</span>
-      </Link>
+      </a>
       <button
         type="button"
         className="menu-toggle"
