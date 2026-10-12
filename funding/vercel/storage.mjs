@@ -1,4 +1,4 @@
-import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
+import { get, put, BlobError, BlobPreconditionFailedError, BlobStoreSuspendedError } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { check, digest } from "../schema.mjs";
 import { manifestFromHtml, registerOpportunities, changeProgress, validateManifest } from "./opportunities.mjs";
@@ -6,6 +6,13 @@ import { changeMemberProgress } from "./member-progress.mjs";
 import { reportRevision, deliveryKey } from "./report-versions.mjs";
 
 const empty = () => ({ version: 1, reports: [], members: {}, sessions: {}, oauth: {}, attempts: {}, deliveries: {} });
+function storageError(error) {
+  if (error instanceof BlobStoreSuspendedError) return Object.assign(new Error("파일 저장소가 일시 중지되었습니다. 관리자가 Vercel Storage와 Usage에서 사용량 한도 및 요금제 상태를 확인해야 합니다."), { status: 503, code: "BLOB_STORE_SUSPENDED" });
+  // The SDK's private GET only exposes the HTTP status, not the suspension
+  // reason. Do not mistake every denied read for an expired token or quota.
+  if (error instanceof BlobError && /Failed to fetch blob: (401|402|403|429)\b/.test(error.message)) return Object.assign(new Error("파일 저장소 접근이 제한되었습니다. 관리자가 Vercel Storage와 Usage에서 사용량 한도, 저장소 상태 및 연결 설정을 확인해야 합니다."), { status: 503, code: "BLOB_READ_RESTRICTED" });
+  return error;
+}
 function queueChannel(state, date, channelId) {
   check(/^\d{17,20}$/.test(channelId), "보고서 채널 설정을 확인해 주세요.", 503);
   const report = state.reports.find((r) => r.date === date);
@@ -17,14 +24,16 @@ function queueChannel(state, date, channelId) {
 }
 export class PrivateBlobFiles {
   constructor(token) { this.token = token; }
-  async read(path) {
+  async read(path, { useCache = false } = {}) {
     check(this.token, "Vercel의 비공개 파일 저장소 연결이 필요합니다.", 503);
     // Compressed delivery can weaken the ETag. CAS needs the original object's
     // strong ETag from the same response as the bytes being edited.
-    const result = await get(path, { access: "private", token: this.token, useCache: false, headers: { "accept-encoding": "identity" }, abortSignal: AbortSignal.timeout(15000) });
-    if (!result) return null;
-    check(result.statusCode === 200 && result.stream, "파일을 읽지 못했습니다.", 502);
-    return { text: await new Response(result.stream).text(), etag: result.blob.etag };
+    try {
+      const result = await get(path, { access: "private", token: this.token, useCache, headers: { "accept-encoding": "identity" }, abortSignal: AbortSignal.timeout(15000) });
+      if (!result) return null;
+      check(result.statusCode === 200 && result.stream, "파일을 읽지 못했습니다.", 502);
+      return { text: await new Response(result.stream).text(), etag: result.blob.etag };
+    } catch (error) { throw storageError(error); }
   }
   async write(path, text, etag = null) {
     check(this.token, "Vercel의 비공개 파일 저장소 연결이 필요합니다.", 503);
@@ -38,7 +47,7 @@ export class PrivateBlobFiles {
     } catch (error) {
       // First-writer races also fail atomically when allowOverwrite is false.
       if (error instanceof BlobPreconditionFailedError || /already exists/i.test(error.message || "")) throw Object.assign(new Error("Storage conflict"), { conflict: true });
-      throw error;
+      throw storageError(error);
     }
   }
 }
@@ -50,8 +59,8 @@ export class BriefStore {
     this.namespace = namespace;
     this.index = `${namespace}/index-v1.json`;
   }
-  async snapshot() {
-    const saved = await this.files.read(this.index);
+  async snapshot({ useCache = false } = {}) {
+    const saved = await this.files.read(this.index, { useCache });
     const state = saved ? JSON.parse(saved.text) : empty();
     check(state.version === 1 && Array.isArray(state.reports), "저장소 형식을 확인해 주세요.", 503);
     state.opportunities ??= {};
@@ -59,6 +68,9 @@ export class BriefStore {
     return { state, etag: saved?.etag ?? null };
   }
   async read() { return (await this.snapshot()).state; }
+  // Only a hint to skip idle polling. Cached state must never authorize a
+  // reader or a send, or supply the ETag used for a conditional write.
+  async readWorkerHint() { return (await this.snapshot({ useCache: true })).state; }
   async update(change) {
     for (let attempt = 0; attempt < 6; attempt++) {
       const { state, etag } = await this.snapshot();
@@ -164,7 +176,9 @@ export class BriefStore {
   }
   async html(report) {
     check(report.path.startsWith(`${this.namespace}/html/`) && !report.path.includes(".."), "다른 서비스의 보고서는 읽을 수 없습니다.", 403);
-    const saved = await this.files.read(report.path);
+    // Content-addressed HTML is immutable; access was checked against fresh
+    // state by the handler, and the digest below still verifies the bytes.
+    const saved = await this.files.read(report.path, { useCache: true });
     check(saved && digest(saved.text) === report.hash, "보고서 파일을 확인하지 못했습니다.", 502);
     return saved.text;
   }

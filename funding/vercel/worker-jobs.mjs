@@ -37,7 +37,7 @@ function findClaim(state, input) {
   return entry;
 }
 export async function claimWorkerJob(store, config, now = Date.now()) {
-  const snapshot = await store.read();
+  const snapshot = await store.readWorkerHint();
   if (snapshot.workerRetryAt > now || ![...rows(snapshot)].some(({ row }) => (row.status === "pending" && !(row.retryAt > now)) || (row.status === "sending" && expiresAt(row) <= now))) return null;
   const lease = randomBytes(32).toString("hex");
   return store.update((state) => {

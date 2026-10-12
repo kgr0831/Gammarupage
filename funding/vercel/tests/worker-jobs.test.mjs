@@ -126,6 +126,41 @@ test("idle polling does not write Blob and direct mode cannot be consumed by a r
   assert.equal((await (await request(app, "status")).json()).ready, false);
 });
 
+test("a stale queue hint cannot resend a completed job or bypass revoked approval", async () => {
+  const app = fixture(); await publish(app);
+  const stale = structuredClone(await app.store.read());
+  app.store.readWorkerHint = async () => stale;
+  let sends = 0;
+  const bot = worker(app, async (url, options) => {
+    if (options.method === "POST") sends++;
+    return Response.json(options.method === "GET" ? channel : { id: messageId });
+  });
+  assert.equal(await bot.runOne(), "sent");
+  assert.equal(await bot.runOne(), null);
+  assert.equal(sends, 1);
+
+  const second = fixture(); await second.member(memberId, "pending");
+  await second.request(`/reports/admin/${memberId}/approve`, await second.session("admin"), {});
+  const beforeRevocation = structuredClone(await second.store.read());
+  second.store.readWorkerHint = async () => beforeRevocation;
+  await second.store.update(state => { state.members[memberId].status = "revoked"; });
+  assert.equal(await claimWorkerJob(second.store, second.config), null);
+  assert.equal((await second.store.read()).members[memberId].approval_notice.status, "cancelled");
+});
+
+test("a cached empty queue can defer a new job until cache refresh without dropping it", async () => {
+  const app = fixture(), empty = structuredClone(await app.store.read());
+  const hint = app.store.readWorkerHint.bind(app.store);
+  await publish(app);
+  app.store.readWorkerHint = async () => empty;
+  const before = app.files.sequence;
+  assert.equal(await claimWorkerJob(app.store, app.config), null);
+  assert.equal(app.files.sequence, before);
+  assert.equal(Object.values((await app.store.read()).deliveries)[0].status, "pending");
+  app.store.readWorkerHint = hint;
+  assert.ok(await claimWorkerJob(app.store, app.config));
+});
+
 test("a lost finish acknowledgement cannot resend a successfully recorded message", async () => {
   const app = fixture(); await publish(app); let posts = 0;
   const bot = worker(app, async (url, options) => {
