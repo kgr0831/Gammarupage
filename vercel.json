@@ -1,5 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["icn1"],
-  "crons": [{ "path": "/api/maintenance/report-retention", "schedule": "10 15 * * *" }]
+  "redirects": [{ "source": "/:path*", "destination": "https://d3ktbkaahtexzk.cloudfront.net/:path*", "permanent": false }]
 }

@@ -7,11 +7,14 @@ Vercel 유료 전환은 하지 않는다. 기존 Vercel Blob의 회원·상태·
 ## 현재 상태
 
 - 서울의 비공개 S3 버킷은 생성·검증 완료. 앱의 두 namespace에서 조건부 쓰기까지 확인했다.
-- AWS 웹 배포 파일과 추가 권한 정책은 준비됨. **새 EC2·CloudFront·AWS 웹사이트는 아직 배포되지 않았다.**
-- `dudri-deployer`로 CloudFormation·CloudFront·Amazon Linux 이미지 파라미터를 조회하면 접근 거절된다.
+- **AWS 웹사이트 배포 완료:** https://d3ktbkaahtexzk.cloudfront.net
+- `GammaruWebDeploy` 권한 적용 후 CloudFormation `gammaru-web` 생성 완료. EC2 `i-06b94415f54bcaa6e`, CloudFront `E1C2C673OS8RXT`에서 운영한다.
+- 랜딩·이미지·sitemap HTTP 200, 양쪽 publisher 로그인·최신 지침·S3 세션 저장·공간별 쿠키 분리를 실제 새 주소에서 확인했다. 보고서는 양쪽 0건, stateVersion 0으로 새로 시작했다.
+- Discord의 새 callback 등록과 두 채널의 서버·채널 조회 성공을 확인했다. 사용자 본인의 OAuth 로그인 완료와 첫 실제 보고서 발행·전송은 별도 확인이 필요하다.
+- 웹·알림 워커·nginx·7일 정리 timer 모두 active, 워커 연결 ready=true를 확인했다. 검증용 보고서나 Discord 메시지는 만들지 않았다.
 - 기존 `dudri-api` 인스턴스는 다른 프로젝트이며 변경하지 않는다.
 - AWS 크레딧 잔액·기한은 아직 조회 권한이 없어 미확인이다. $100가 있다고 단정하지 않는다.
-- dots 예약은 이 배포 스크립트가 변경하지 않는다. 새 URL 확정 후 기존 예약의 주소를 바꿔야 한다.
+- dots 예약은 이 배포 스크립트가 변경하지 않는다. [주소 변경 전달문](dots-aws-switch.md)을 기존 dots에 전달하고 새 도메인에서 다시 로그인해야 한다.
 
 ## 구성
 
@@ -35,7 +38,7 @@ NAT Gateway·로드밸런서·RDS는 만들지 않는다. CPU 크레딧은 `stan
 CloudFront는 쿠키·Host·쿼리를 전달하고 캐싱을 끈다. nginx는 원래 HTTPS 주소를 Next에 전달한다.
 로그인·보고서·상태 API를 CDN에 저장하지 않는다. 접근 로그에는 OAuth code나 키를 남기지 않는다.
 
-## 지금 필요한 AWS 권한
+## 적용한 AWS 권한
 
 이전 `GammaruReportsMigration`은 저장소 전용이어서 웹서버 생성 권한이 없다.
 추가 정책 [aws-web-deploy-permissions.json](../infra/aws-web-deploy-permissions.json)을
@@ -96,8 +99,8 @@ CloudFront가 생성한 관리형 보안 그룹을 확인한 뒤 EC2 인바운�
 `gammarupage.vercel.app`은 Vercel 소유 도메인이므로 AWS에 그대로 붙일 수 없다.
 이번에는 새 `https://…cloudfront.net` 주소에서 랜딩과 `/reports`, `/personal`을 함께 제공한다.
 
-1. Discord Developer Portal의 기존 앱 OAuth2 Redirects에 새 주소의 **`/reports/auth/callback`**을 추가한다.
-   개인 공간도 같은 callback을 사용한다. 기존 redirect는 이전 사이트 보존을 위해 당장 삭제하지 않는다.
+1. Discord Developer Portal에 **`https://d3ktbkaahtexzk.cloudfront.net/reports/auth/callback`** 등록을 확인했다.
+   개인 공간도 같은 callback을 사용한다. 기존 redirect는 당장 삭제하지 않는다.
 2. 새 `/reports/login/admin`에서 로그인한다. 동아리 회원은 Discord 재로그인 후 다시 승인한다.
    `/personal`은 Discord 로그인만으로 열리며, 진행 버튼과 메모는 Discord 계정별로 새로 시작한다.
 3. 두 공간의 publisher 로그인, 업로드 자료·최신 stateVersion, S3 상태 변경, 계정별 분리,
@@ -105,10 +108,13 @@ CloudFront가 생성한 관리형 보안 그룹을 확인한 뒤 EC2 인바운�
 4. dots의 기존 두 예약에서 사이트 주소만 새 origin으로 변경하고 다시 로그인한다.
    **한국시간 08시 조사·09시 보고**는 유지한다. 사이트가 실제 반환한 상태를 읽어 새 보고서를 만든다.
 5. 첫 실제 발행의 날짜·버전·URL·채널 전송 결과를 확인한다.
-6. AWS 검증 후 기존 Dishost 워커를 중지하고 Vercel 발행·정리 예약을 중지한다.
-   기존 Vercel Blob 원본은 삭제하지 않는다. 현재 준비 단계에서는 옛 서버·예약을 아직 건드리지 않았다.
+6. `vercel.json`은 기존 경로를 새 CloudFront 주소로 보내는 임시 redirect만 유지하며 Vercel 정리 cron을 제거한다.
+   기존 Dishost 워커는 redirect를 따르지 않으므로 새 AWS 큐를 중복 처리하지 않는다. Dishost 콘솔의 중지 버튼으로 이전 프로세스를 종료할 수 있다.
+   기존 Vercel Blob 원본은 삭제하지 않는다. dots 예약은 사용자가 주소 변경 전달문을 적용해야 한다.
 
-### dots 전달문 — URL 확정 후 치환
+### dots 전달문
+
+바로 복사할 최신 전달문: [dots-aws-switch.md](dots-aws-switch.md). 아래 `<AWS_URL>`은 `https://d3ktbkaahtexzk.cloudfront.net`이다.
 
 ```text
 겜마루와 개인 보고서 사이트를 AWS로 이전했어.
@@ -138,7 +144,10 @@ AWS는 새 저장소로 시작했으므로 예전 Vercel의 stateVersion·회원
   HTTPS 프록시 헤더, 양쪽 publisher 로그인·쿠키 분리·자료 페이지·CSRF·정적 파일 확인.
 - 보고서 테스트 116개 통과: publisher guide·7일 정리·계정 분리·프록시 경계 포함. 수정 파일 ESLint 통과.
 - CloudFormation `cfn-lint`, Python 구문 검사, Bash `-n` 검사.
-- AWS 실제 배포 및 새 도메인의 OAuth·알림 검증은 추가 권한 적용 후 수행한다.
+- 실제 서울 EC2에서 Linux ARM 의존성 설치·Next 빌드와 서비스 실행 성공. Windows Git 압축의 CRLF 문제는 `.gitattributes`와 archive 설정으로 수정했고 압축 내부 shell bytes를 검사한다.
+- 새 HTTPS 주소의 정적 페이지·양쪽 업로드 로그인·S3 세션 저장·새 stateVersion·자료 읽기·공간 분리 통과. 검증 로그인 세션은 로그아웃했다.
+- Discord callback 등록 및 두 실제 채널 조회 확인. 워커 인증 연결 ready=true, 서비스 재시작 0회 확인. 첫 실제 메시지 전송은 수행하지 않았다.
+- 7일 정리 timer 활성화 확인. 매일 00:10 KST(최대 30초 지연), HTML만 정책에 따라 정리하고 상태·메모는 유지한다.
 
 ## 근거
 
