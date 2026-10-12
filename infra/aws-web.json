@@ -1,0 +1,88 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Gammaru web, report storage access, and notification worker. Existing S3 is external to this stack.",
+  "Parameters": {
+    "ImageId": {"Type": "AWS::EC2::Image::Id"},
+    "VpcId": {"Type": "AWS::EC2::VPC::Id", "Default": "vpc-009dcb19c3a1e036c"},
+    "SubnetId": {"Type": "AWS::EC2::Subnet::Id", "Default": "subnet-0bb38fc5a79ad0c47"},
+    "CloudFrontPrefixList": {"Type": "String", "Default": "pl-22a6434b"}
+  },
+  "Resources": {
+    "RuntimeRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "gammaru-web-runtime",
+        "AssumeRolePolicyDocument": {"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"}, "Action": "sts:AssumeRole"}]},
+        "ManagedPolicyArns": ["arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"],
+        "Tags": [{"Key": "Project", "Value": "gammaru-web"}],
+        "Policies": [{"PolicyName": "GammaruRuntime", "PolicyDocument": {"Version": "2012-10-17", "Statement": [
+          {"Effect": "Allow", "Action": "s3:ListBucket", "Resource": "arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul", "Condition": {"StringLike": {"s3:prefix": ["gammaru/briefs/*", "personal/briefs/*"]}}},
+          {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], "Resource": ["arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul/gammaru/briefs/*", "arn:aws:s3:::gammaru-daily-scrum-066523631431-seoul/personal/briefs/*"]},
+          {"Effect": "Allow", "Action": "ssm:GetParameter", "Resource": "arn:aws:ssm:ap-northeast-2:066523631431:parameter/gammaru/web/runtime"}
+        ]}}]
+      }
+    },
+    "InstanceProfile": {"Type": "AWS::IAM::InstanceProfile", "Properties": {"InstanceProfileName": "gammaru-web-runtime", "Roles": [{"Ref": "RuntimeRole"}]}},
+    "WebSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Gammaru origin; CloudFront only, no SSH",
+        "VpcId": {"Ref": "VpcId"},
+        "SecurityGroupIngress": [{"IpProtocol": "tcp", "FromPort": 80, "ToPort": 80, "SourcePrefixListId": {"Ref": "CloudFrontPrefixList"}}],
+        "Tags": [{"Key": "Name", "Value": "gammaru-web"}, {"Key": "Project", "Value": "gammaru-web"}]
+      }
+    },
+    "Web": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {"Ref": "ImageId"},
+        "InstanceType": "t4g.small",
+        "CreditSpecification": {"CPUCredits": "standard"},
+        "IamInstanceProfile": {"Ref": "InstanceProfile"},
+        "NetworkInterfaces": [{"AssociatePublicIpAddress": true, "DeviceIndex": "0", "SubnetId": {"Ref": "SubnetId"}, "GroupSet": [{"Ref": "WebSecurityGroup"}]}],
+        "MetadataOptions": {"HttpTokens": "required", "HttpPutResponseHopLimit": 1, "HttpEndpoint": "enabled"},
+        "BlockDeviceMappings": [{"DeviceName": "/dev/xvda", "Ebs": {"VolumeSize": 20, "VolumeType": "gp3", "Encrypted": true, "DeleteOnTermination": true}}],
+        "PropagateTagsToVolumeOnCreation": true,
+        "Tags": [{"Key": "Name", "Value": "gammaru-web"}, {"Key": "Project", "Value": "gammaru-web"}]
+      }
+    },
+    "VpcOrigin": {
+      "Type": "AWS::CloudFront::VpcOrigin",
+      "Properties": {
+        "Tags": [{"Key": "Project", "Value": "gammaru-web"}],
+        "VpcOriginEndpointConfig": {"Name": "gammaru-web", "Arn": {"Fn::Sub": "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${Web}"}, "HTTPPort": 80, "HTTPSPort": 443, "OriginProtocolPolicy": "http-only"}
+      }
+    },
+    "Distribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "Tags": [{"Key": "Project", "Value": "gammaru-web"}],
+        "DistributionConfig": {
+          "Comment": "Gammaru landing and daily reports",
+          "Enabled": true,
+          "HttpVersion": "http2and3",
+          "IPV6Enabled": true,
+          "PriceClass": "PriceClass_All",
+          "Origins": [{"Id": "web", "DomainName": {"Fn::GetAtt": ["Web", "PrivateDnsName"]}, "VpcOriginConfig": {"VpcOriginId": {"Fn::GetAtt": ["VpcOrigin", "Id"]}, "OriginReadTimeout": 60}}],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "web",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": ["GET", "HEAD", "OPTIONS", "PUT", "PATCH", "POST", "DELETE"],
+            "CachedMethods": ["GET", "HEAD"],
+            "Compress": true,
+            "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+            "OriginRequestPolicyId": "216adef6-5c7f-47e4-b989-5492eafa07d3"
+          },
+          "CustomErrorResponses": [{"ErrorCode": 403, "ErrorCachingMinTTL": 0}, {"ErrorCode": 404, "ErrorCachingMinTTL": 0}, {"ErrorCode": 500, "ErrorCachingMinTTL": 0}, {"ErrorCode": 502, "ErrorCachingMinTTL": 0}, {"ErrorCode": 503, "ErrorCachingMinTTL": 0}],
+          "ViewerCertificate": {"CloudFrontDefaultCertificate": true}
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "SiteUrl": {"Value": {"Fn::Sub": "https://${Distribution.DomainName}"}},
+    "InstanceId": {"Value": {"Ref": "Web"}},
+    "SecurityGroupId": {"Value": {"Ref": "WebSecurityGroup"}},
+    "DistributionId": {"Value": {"Ref": "Distribution"}}
+  }
+}

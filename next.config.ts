@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: process.env.REPORTS_DEPLOY_TARGET === "aws" ? "standalone" : undefined,
   allowedDevOrigins: ["127.0.0.1"],
-  // The live site is on Vercel. Authenticated HTML uploads need request-time routes.
+  // AWS and Vercel both retain authenticated request-time report routes.
   outputFileTracingIncludes: {
     "/reports/**": ["./funding/portal/style.css", "./Design.md", "./gammaruInfo.md", "./docs/dots-daily-brief.md", "./docs/personal-brief-profile.md", "./docs/dots-personal-brief.md", "./docs/personal-Design.md"],
     "/personal/**": ["./funding/portal/style.css", "./docs/personal-brief-profile.md", "./docs/dots-personal-brief.md", "./docs/personal-Design.md"],

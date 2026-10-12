@@ -48,13 +48,28 @@ test("guide includes full escaped sources and changing research data without mut
   const embedded = JSON.parse(decode(first.match(/<pre id="research-state-json">([\s\S]*?)<\/pre>/)[1]));
   delete embedded.generatedAt;
   assert.deepEqual(embedded, feed);
-  for (const file of ["docs/dots-daily-brief.md", "Design.md", "gammaruInfo.md"]) assert.ok(first.includes(esc(await readFile(file, "utf8"))));
+  for (const file of ["docs/dots-daily-brief.md", "Design.md", "gammaruInfo.md"]) {
+    const text = (await readFile(file, "utf8")).replaceAll("{{REPORTS_SITE_URL}}", app.config.origin);
+    assert.ok(first.includes(esc(text)));
+  }
   assert.deepEqual(await app.store.read(), before, "Reading the guide does not change shared state");
   await app.store.setProgress(item.id, { status: "in_progress", note: "Updated review", revision: 1 }, "private-actor");
   const refreshed = await (await app.request(endpoint, cookie)).text();
   assert.match(refreshed, /stateVersion: 3/);
   assert.match(refreshed, /Updated review/);
   assert.ok(!refreshed.includes("&lt;/pre&gt;&lt;img"));
+});
+
+test("club instructions follow the configured AWS origin without sending dots to the old host", async () => {
+  const origin = "https://dexample.cloudfront.net";
+  const app = setup({ origin, secure: true });
+  const session = (await app.session("publisher")).replace("briefs=", "__Host-briefs=");
+  const response = await app.request("/reports/instructions", session);
+  assert.equal(response.status, 200);
+  const body = await response.text();
+  assert.ok(body.includes(`${origin}/reports/upload?guide=1`));
+  assert.ok(body.includes(`${origin}/reports/login/publisher`));
+  assert.doesNotMatch(body, /gammarupage\.vercel\.app|\{\{REPORTS_SITE_URL\}\}/);
 });
 
 test("upload navigation uses the HTML guide while existing data endpoints retain their formats", async () => {

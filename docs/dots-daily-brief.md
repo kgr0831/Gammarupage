@@ -2,7 +2,7 @@
 
 수집 대상은 **겜마루 동아리가 외부에서 직접 확보할 운영비·후원 물품·장비·공간·단체용 서비스 지원**이다.
 이 문서는 운영용 dot에게 줄 지시문이며, 개발 작업 지시문이 아니다.
-배포 대상은 **https://gammarupage.vercel.app/** 이다.
+배포 대상은 **{{REPORTS_SITE_URL}}/** 이다.
 
 ## 수집 기준 — 동아리가 실제로 받을 자원
 
@@ -57,7 +57,7 @@
 ## 최초 연결
 
 1. [Vercel 연결 안내](vercel-html-reports.md)에 따라 Private Blob·로그인 환경변수·Discord OAuth를 연결하고 보고서 기능을 최초 배포한다.
-2. dot의 **클라우드 컴퓨터** 브라우저로 `https://gammarupage.vercel.app/reports/login/publisher`를 연다.
+2. dot의 **클라우드 컴퓨터** 브라우저로 `{{REPORTS_SITE_URL}}/reports/login/publisher`를 연다.
 3. 비공개 로그인 또는 브라우저 인계를 요청하게 하고 사용자가 업로드 전용 키를 직접 입력한다.
    키를 대화·Markdown·HTML에 붙이지 않는다. 관리자 비밀번호나 Discord 봇 토큰을 dot에게 주지 않는다.
 4. 이 계정은 HTML 등록·자신의 미리보기·알림 처리 전용이다. 회원 명단·구독 승인·외부 메일 발송 권한은 없다.
@@ -71,7 +71,7 @@
 
 ### 브라우저에서 조사 자료 읽기
 
-로그인 후 `https://gammarupage.vercel.app/reports/upload?guide=1`을 열면 작업 지침·동아리 정보·Design.md·진행 기록을 **하나의 HTML 페이지**에서 읽을 수 있다. 업로드 화면의 자료 링크들도 이 페이지로 연결된다.
+로그인 후 `{{REPORTS_SITE_URL}}/reports/upload?guide=1`을 열면 작업 지침·동아리 정보·Design.md·진행 기록을 **하나의 HTML 페이지**에서 읽을 수 있다. 업로드 화면의 자료 링크들도 이 페이지로 연결된다.
 텍스트·JSON 주소에서 `ERR_BLOCKED_BY_CLIENT`가 나면 이 HTML 보기를 사용한다. 기존 주소의 접근 권한을 해제하거나 로그인 키를 URL에 넣지 않는다.
 `#research-state`의 `research-state-json` 영역은 `/reports/research-state`와 같은 전체 JSON이다. 최신 `stateVersion`, `known`, 메모, 이전 보고서 목록을 여기서 확인할 수 있다. 조사 시작 시와 발행 직전에 페이지를 새로고침한다.
 
@@ -110,9 +110,9 @@
 - 자체 게임잼, 보드게임잼, 개발 스터디, 지식 발표회, 선배·현업자·타 대학 동아리와의 교류 활동이 있어.
 - 공개 소개에는 Unity·Unreal 등을 다루는 스터디와 72시간 게임잼이 기록돼 있어.
 - 작품 아카이브와 활동 기록은 후원 제안의 근거로 쓸 수 있어.
-  소개: https://gammarupage.vercel.app/about
-  활동: https://gammarupage.vercel.app/activities
-  작품: https://gammarupage.vercel.app/games
+  소개: {{REPORTS_SITE_URL}}/about
+  활동: {{REPORTS_SITE_URL}}/activities
+  작품: {{REPORTS_SITE_URL}}/games
 - 위 정보는 저장된 동아리 소개와 활동 기록이야. 과거 활동을 현재 확정된 행사로 말하지 마.
 - 현재 회원 수·예산·필요 물품 수량·향후 행사 일정·장소·담당자 연락처는 미확인이야.
   겜마루가 법인·사업자·창업팀이라고 가정하거나, 수상·협약·기존 후원 실적을 만들지 마.
@@ -149,10 +149,10 @@
 무료 상품 정가를 확보한 현금으로 더하거나, 확인되지 않은 지출을 절감액으로 계산하지 마.
 
 [4. 매일 읽을 자료와 진행 기록]
-사이트: https://gammarupage.vercel.app
-로그인: https://gammarupage.vercel.app/reports/login/publisher
-전체 조사 자료: https://gammarupage.vercel.app/reports/upload?guide=1
-업로드: https://gammarupage.vercel.app/reports/upload
+사이트: {{REPORTS_SITE_URL}}
+로그인: {{REPORTS_SITE_URL}}/reports/login/publisher
+전체 조사 자료: {{REPORTS_SITE_URL}}/reports/upload?guide=1
+업로드: {{REPORTS_SITE_URL}}/reports/upload
 
 매 실행 시작 때 전체 조사 자료를 새로고침하고 작업 지침·동아리 정보·Design.md·진행 기록을 모두 읽어줘.
 진행 기록은 research-state-json 영역의 전체 JSON을 사용해줘.
